@@ -17,6 +17,10 @@ const statusColumns: { id: TaskStatus; title: string }[] = [
   { id: "ATMESTA", title: "Atmesta" },
 ];
 
+type TaskWithProfile = Tables<"tasks"> & {
+  profiles: Pick<Tables<"profiles">, "email"> | null;
+};
+
 export function KanbanBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -59,7 +63,7 @@ export function KanbanBoard() {
         throw error;
       }
       console.log("Fetched tasks:", data);
-      return data;
+      return data as TaskWithProfile[];
     },
   });
 
