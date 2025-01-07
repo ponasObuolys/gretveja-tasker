@@ -56,7 +56,7 @@ export function CreateTaskDialog() {
     setSelectedFiles(files);
   };
 
-  const uploadFiles = async (taskId: string) => {
+  const uploadFiles = async (taskId: string, userId: string) => {
     for (const file of selectedFiles) {
       const fileExt = file.name.split(".").pop();
       const filePath = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
@@ -75,6 +75,7 @@ export function CreateTaskDialog() {
         file_path: filePath,
         file_name: file.name,
         content_type: file.type,
+        created_by: userId,
       });
 
       if (dbError) {
@@ -86,6 +87,13 @@ export function CreateTaskDialog() {
   const onSubmit = async (data: TaskFormValues) => {
     try {
       setIsSubmitting(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
       const { data: task, error } = await supabase
         .from("tasks")
         .insert({
@@ -93,6 +101,7 @@ export function CreateTaskDialog() {
           description: data.description,
           priority: data.priority,
           deadline: data.deadline || null,
+          created_by: user.id,
         })
         .select()
         .single();
@@ -100,7 +109,7 @@ export function CreateTaskDialog() {
       if (error) throw error;
 
       if (selectedFiles.length > 0 && task) {
-        await uploadFiles(task.id);
+        await uploadFiles(task.id, user.id);
       }
 
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
