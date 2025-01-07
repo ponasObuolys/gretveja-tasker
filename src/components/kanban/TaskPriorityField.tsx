@@ -1,30 +1,9 @@
 import { FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { cn } from "@/lib/utils";
 
 export const TaskPriorityField = () => {
   const form = useFormContext();
-  const priority = useWatch({
-    control: form.control,
-    name: "priority",
-  });
-
-  const getPriorityLabel = () => {
-    const numPriority = Number(priority);
-    if (numPriority >= 3 && numPriority <= 5) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#FF0000] text-[#FFFFFF] mb-2">
-          SVARBI UŽDUOTIS
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#E6F3FF] text-[#000000] mb-2">
-        Užduotis
-      </span>
-    );
-  };
 
   return (
     <FormField
@@ -32,22 +11,38 @@ export const TaskPriorityField = () => {
       name="priority"
       render={({ field }) => (
         <FormItem>
-          <div className="flex items-center gap-2 mb-1">
-            {getPriorityLabel()}
-          </div>
           <FormControl>
-            <Input
-              type="number"
-              min={1}
-              max={5}
-              {...field}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === "" || (Number(value) >= 1 && Number(value) <= 5)) {
-                  field.onChange(value);
-                }
-              }}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => field.onChange(1)}
+                className={cn(
+                  "p-4 rounded-lg transition-all duration-200",
+                  "border-2 hover:scale-105",
+                  field.value === 1
+                    ? "border-blue-500 shadow-lg"
+                    : "border-transparent",
+                  "bg-[#E6F3FF] text-[#000000]"
+                )}
+              >
+                <span className="font-medium">Užduotis</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => field.onChange(3)}
+                className={cn(
+                  "p-4 rounded-lg transition-all duration-200",
+                  "border-2 hover:scale-105",
+                  field.value === 3
+                    ? "border-white shadow-lg"
+                    : "border-transparent",
+                  "bg-[#FF0000] text-[#FFFFFF]"
+                )}
+              >
+                <span className="font-medium">SVARBI UŽDUOTIS</span>
+              </button>
+            </div>
           </FormControl>
           <FormMessage />
         </FormItem>
