@@ -1,43 +1,66 @@
-import { Search, Settings, Bell, LogOut } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export function DashboardHeader() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
-
-  const handleSettingsClick = () => {
-    navigate("/settings");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atsijungti. Bandykite dar kartą.",
+        variant: "destructive",
+      });
+      return;
+    }
+    navigate("/");
   };
 
   return (
-    <header className="flex items-center justify-between">
-      <div className="relative flex-1 max-w-xl">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <Input
+    <div className="flex items-center justify-between p-4">
+      <div className="relative w-full max-w-lg">
+        <input
+          type="text"
           placeholder="Ieškoti užduočių..."
-          className="pl-10 bg-[#242832] border-gray-700"
+          className="w-full pl-10 pr-4 py-2 bg-[#242832] border border-gray-700 rounded-lg focus:outline-none focus:border-[#FF4B6E] text-gray-300"
         />
+        <svg
+          className="absolute left-3 top-2.5 h-5 w-5 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
       </div>
-      
+
       <div className="flex items-center space-x-4">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleSettingsClick}>
-                <Settings className="w-5 h-5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/settings")}
+                className="hover:bg-[#242832]"
+              >
+                <Settings className="h-5 w-5 text-gray-400" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -45,13 +68,16 @@ export function DashboardHeader() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#FF4B6E] rounded-full" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-[#242832]"
+              >
+                <Bell className="h-5 w-5 text-gray-400" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -60,24 +86,14 @@ export function DashboardHeader() {
           </Tooltip>
         </TooltipProvider>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                onClick={handleLogout}
-                className="text-[#FF4B6E] hover:text-[#ff1f4d] transition-colors"
-              >
-                <LogOut className="w-5 h-5 mr-2" />
-                Atsijungti
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Atsijungti iš sistemos</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="text-[#FF4B6E] hover:text-[#FF3355] hover:bg-[#242832]"
+        >
+          Atsijungti
+        </Button>
       </div>
-    </header>
+    </div>
   );
 }

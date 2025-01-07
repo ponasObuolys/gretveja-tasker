@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -28,7 +31,7 @@ export default function Settings() {
         .single();
         
       if (error) throw error;
-      return data;
+      return data as Profile;
     },
   });
 
@@ -36,6 +39,8 @@ export default function Settings() {
     mutationFn: async (formData: FormData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
+
+      let avatarUrl = profile?.avatar_url;
 
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
@@ -46,13 +51,27 @@ export default function Settings() {
           .upload(filePath, avatarFile, { upsert: true });
           
         if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        avatarUrl = publicUrl;
+      }
+
+      const email = formData.get('email');
+      const role = formData.get('role');
+
+      if (typeof email !== 'string' || !['ADMIN', 'USER'].includes(role as string)) {
+        throw new Error('Invalid form data');
       }
 
       const { error } = await supabase
         .from('profiles')
         .update({
-          email: formData.get('email'),
-          role: formData.get('role'),
+          email,
+          role: role as 'ADMIN' | 'USER',
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -123,7 +142,7 @@ export default function Settings() {
             <div className="flex flex-col items-center mb-8">
               <div className="relative group">
                 <Avatar className="w-40 h-40">
-                  <AvatarImage src={avatarPreview || profile?.avatar_url} />
+                  <AvatarImage src={avatarPreview || profile?.avatar_url || ''} />
                   <AvatarFallback>
                     {profile?.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -154,7 +173,7 @@ export default function Settings() {
                   id="email"
                   name="email"
                   type="email"
-                  defaultValue={profile?.email}
+                  defaultValue={profile?.email || ''}
                   className="bg-[#1A1D24]"
                 />
               </div>
@@ -164,7 +183,7 @@ export default function Settings() {
                 <Input
                   id="role"
                   name="role"
-                  defaultValue={profile?.role}
+                  defaultValue={profile?.role || ''}
                   className="bg-[#1A1D24]"
                 />
               </div>
