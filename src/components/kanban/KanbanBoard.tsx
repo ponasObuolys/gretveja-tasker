@@ -48,7 +48,7 @@ export function KanbanBoard() {
         .from("tasks")
         .select(`
           *,
-          creator:created_by (
+          creator:profiles!tasks_created_by_fkey (
             email
           )
         `)
