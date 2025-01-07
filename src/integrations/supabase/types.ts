@@ -74,6 +74,44 @@ export type Database = {
         }
         Relationships: []
       }
+      task_comments: {
+        Row: {
+          attachments: Json | null
+          comment: string
+          created_at: string | null
+          id: string
+          links: string[] | null
+          task_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          comment: string
+          created_at?: string | null
+          id?: string
+          links?: string[] | null
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          comment?: string
+          created_at?: string | null
+          id?: string
+          links?: string[] | null
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           created_at: string

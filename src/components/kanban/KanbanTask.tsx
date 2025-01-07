@@ -4,6 +4,12 @@ import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { lt } from "date-fns/locale";
+import { useState } from "react";
+import { TaskComments } from "./TaskComments";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -15,8 +21,26 @@ interface KanbanTaskProps {
 }
 
 export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
+  const [showComments, setShowComments] = useState(false);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
+  });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
   });
 
   const style = transform
@@ -63,6 +87,25 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
           Terminas: {format(new Date(task.deadline), "PPP", { locale: lt })}
         </div>
       )}
+      
+      <div className="mt-4 border-t pt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={() => setShowComments(!showComments)}
+        >
+          <MessageCircle className="w-4 h-4 mr-2" />
+          {showComments ? "Slėpti komentarus" : "Rodyti komentarus"}
+        </Button>
+        
+        {showComments && (
+          <TaskComments
+            taskId={task.id}
+            isAdmin={userProfile?.role === "ADMIN"}
+          />
+        )}
+      </div>
     </Card>
   );
 }
