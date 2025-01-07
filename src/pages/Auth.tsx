@@ -1,34 +1,85 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Existing session found, redirecting to dashboard");
         navigate("/");
+      }
+    };
+    
+    checkExistingSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, "Session:", session ? "exists" : "none");
+      
+      if (event === "SIGNED_IN" && session) {
+        try {
+          // Check user profile and role
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+            throw new Error("Nepavyko patikrinti vartotojo profilio");
+          }
+
+          console.log("User profile:", profile);
+          
+          toast({
+            title: "Sėkmingai prisijungta",
+            description: profile.role === "ADMIN" ? 
+              "Sveiki sugrįžę, administratoriau!" : 
+              "Sveiki sugrįžę!",
+          });
+
+          navigate("/");
+        } catch (error) {
+          console.error("Login error:", error);
+          setError(error instanceof Error ? error.message : "Įvyko nenumatyta klaida");
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      console.log("Cleaning up auth subscription");
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center bg-[#1A1D24]">
+      <div className="max-w-md w-full space-y-8 p-8 bg-[#242832] rounded-lg shadow-lg">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Sveiki atvykę į GRETVEJA TASKER
+          <h2 className="mt-6 text-3xl font-bold text-white">
+            GRETVĖJA TASKER
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Prisijunkite prie savo paskyros arba sukurkite naują
+          <p className="mt-2 text-sm text-gray-400">
+            Prisijunkite prie savo paskyros
           </p>
         </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <SupabaseAuth 
           supabaseClient={supabase} 
           appearance={{ 
@@ -36,10 +87,18 @@ const Auth = () => {
             variables: {
               default: {
                 colors: {
-                  brand: '#2563eb',
-                  brandAccent: '#1d4ed8',
+                  brand: '#FF4B6E',
+                  brandAccent: '#FF3355',
+                  defaultButtonBackground: '#FF4B6E',
+                  defaultButtonBackgroundHover: '#FF3355',
                 }
               }
+            },
+            className: {
+              container: 'text-white',
+              label: 'text-white',
+              button: 'bg-[#FF4B6E] hover:bg-[#FF3355] text-white',
+              input: 'bg-[#1A1D24] border-gray-700 text-white',
             }
           }}
           localization={{
@@ -64,15 +123,6 @@ const Auth = () => {
                 social_provider_text: "Registruotis su {{provider}}",
                 link_text: "Neturite paskyros? Registruokitės",
                 confirmation_text: "Patikrinkite savo el. paštą dėl patvirtinimo nuorodos"
-              },
-              forgotten_password: {
-                link_text: "Pamiršote slaptažodį?",
-                email_label: "El. paštas",
-                password_label: "Slaptažodis",
-                email_input_placeholder: "Jūsų el. paštas",
-                button_label: "Siųsti atkūrimo nuorodą",
-                loading_button_label: "Siunčiama atkūrimo nuoroda...",
-                confirmation_text: "Patikrinkite savo el. paštą dėl atkūrimo nuorodos"
               }
             }
           }}
