@@ -14,10 +14,10 @@ const Index = () => {
     <div className="min-h-screen p-4">
       <div className="flex justify-end mb-4">
         <Button onClick={handleLogout} variant="outline">
-          Logout
+          Atsijungti
         </Button>
       </div>
-      <h1 className="text-2xl font-bold mb-4">Task Track</h1>
+      <h1 className="text-2xl font-bold mb-4">Gretva Tasker</h1>
       {/* Your existing content will go here */}
     </div>
   );
