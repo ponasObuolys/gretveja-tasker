@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/components/ui/use-toast";
+import { CreateTaskDialog } from "./CreateTaskDialog";
 
 type TaskStatus = Tables<"tasks">["status"];
 
@@ -89,29 +90,34 @@ export function KanbanBoard() {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 p-4 overflow-x-auto min-h-[calc(100vh-10rem)]">
-        {statusColumns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            id={column.id}
-            title={column.title}
-            tasks={tasks?.filter((task) => task.status === column.id) || []}
-          />
-        ))}
+    <>
+      <div className="p-4">
+        <CreateTaskDialog />
       </div>
-      <DragOverlay>
-        {activeId && tasks ? (
-          <KanbanTask
-            task={tasks.find((task) => task.id === activeId)!}
-            isDragging
-          />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 p-4 overflow-x-auto min-h-[calc(100vh-10rem)]">
+          {statusColumns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              tasks={tasks?.filter((task) => task.status === column.id) || []}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeId && tasks ? (
+            <KanbanTask
+              task={tasks.find((task) => task.id === activeId)!}
+              isDragging
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   );
 }
