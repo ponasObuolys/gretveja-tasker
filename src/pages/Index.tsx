@@ -17,7 +17,7 @@ const Index = () => {
           Atsijungti
         </Button>
       </div>
-      <h1 className="text-2xl font-bold mb-4">Gretva Tasker</h1>
+      <h1 className="text-2xl font-bold mb-4">GRETVEJA TASKER</h1>
       {/* Your existing content will go here */}
     </div>
   );
