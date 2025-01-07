@@ -5,7 +5,7 @@ import { KanbanTask } from "./KanbanTask";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { CreateTaskDialog } from "./CreateTaskDialog";
 
 type TaskStatus = Tables<"tasks">["status"];
@@ -22,6 +22,23 @@ export function KanbanBoard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const sensors = useSensors(useSensor(PointerSensor));
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -44,6 +61,11 @@ export function KanbanBoard() {
       taskId: string;
       newStatus: TaskStatus;
     }) => {
+      // Check if user is admin before attempting update
+      if (userProfile?.role !== 'ADMIN') {
+        throw new Error('Insufficient permissions');
+      }
+
       const { error } = await supabase
         .from("tasks")
         .update({ status: newStatus })
@@ -58,16 +80,26 @@ export function KanbanBoard() {
         description: "Užduoties statusas sėkmingai pakeistas",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error updating task:", error);
       toast({
-        title: "Klaida",
-        description: "Nepavyko atnaujinti užduoties statuso",
+        title: "Negalima keisti užduoties",
+        description: "Neturite teisių keisti užduotis. Jūs galite tik kurti naujas užduotis.",
         variant: "destructive",
       });
     },
   });
 
   function handleDragStart(event: DragStartEvent) {
+    // Check permissions before allowing drag
+    if (userProfile?.role !== 'ADMIN') {
+      toast({
+        title: "Negalima keisti užduoties",
+        description: "Neturite teisių keisti užduotis. Jūs galite tik kurti naujas užduotis.",
+        variant: "destructive",
+      });
+      return;
+    }
     setActiveId(event.active.id as string);
   }
 
