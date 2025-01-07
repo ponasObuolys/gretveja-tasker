@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -21,7 +21,14 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const initializeSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
+        if (initialSession) {
+          console.log("Session initialized successfully");
+          setSession(initialSession);
+          setRetryCount(0); // Reset retry count on success
+        } else {
+          console.log("No initial session found");
+          setSession(null);
+        }
       } catch (error) {
         console.error("Error initializing session:", error);
         setSession(null);
@@ -30,19 +37,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           description: "Prašome prisijungti iš naujo",
           variant: "destructive",
         });
-      } else {
-        console.log("Session refreshed successfully");
-        setSession(refreshedSession);
-        setRetryCount(0); // Reset retry count on success
+      } finally {
+        setIsRefreshing(false);
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Session check error:", error);
-      setSession(null);
-    } finally {
-      setIsRefreshing(false);
-      setLoading(false);
-    }
-  }, [toast, retryCount, isRefreshing]);
+    };
 
     // Handle session refresh
     const setupAuthListener = () => {
@@ -91,7 +90,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       clearInterval(sessionCheckInterval);
       subscription.unsubscribe();
     };
-  }, [refreshSession, toast]);
+  }, [toast, retryCount, isRefreshing]);
 
   // Handle loading state
   if (loading) {
