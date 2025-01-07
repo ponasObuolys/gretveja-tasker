@@ -1,7 +1,12 @@
 import { Search, Settings, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DashboardHeader() {
   return (
@@ -15,18 +20,32 @@ export function DashboardHeader() {
       </div>
       
       <div className="flex items-center space-x-4">
-        <Tooltip content="Nustatymai">
-          <Button variant="ghost" size="icon">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Nustatymai</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
-        <Tooltip content="Pranešimai">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#FF4B6E] rounded-full" />
-          </Button>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#FF4B6E] rounded-full" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Pranešimai</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </header>
   );
