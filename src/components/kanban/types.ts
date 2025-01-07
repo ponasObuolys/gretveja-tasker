@@ -1,8 +1,6 @@
-import { Json } from "@/integrations/supabase/types";
-
-interface Profile {
+interface User {
+  id: string;
   email: string;
-  username?: string;
 }
 
 export interface TaskComment {
@@ -11,7 +9,7 @@ export interface TaskComment {
   user_id: string;
   comment: string;
   created_at: string;
-  attachments: Json;
+  attachments: any;
   links: string[];
-  profiles?: Profile;
+  user?: User;
 }

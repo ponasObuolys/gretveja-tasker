@@ -13,7 +13,7 @@ export function CommentList({ comments }: CommentListProps) {
       {comments.map((comment) => (
         <div key={comment.id} className="bg-secondary/50 rounded-lg p-4 space-y-2">
           <div className="flex justify-between items-start">
-            <div className="font-medium">{comment.profiles?.email || "Nežinomas vartotojas"}</div>
+            <div className="font-medium">{comment.user?.email || "Nežinomas vartotojas"}</div>
             <div className="text-sm text-muted-foreground">
               {format(new Date(comment.created_at), "PPP", { locale: lt })}
             </div>
