@@ -13,23 +13,23 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkAndRefreshSession = async () => {
       try {
-        // First try to get the current session
+        console.log("Checking session...");
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Current session:", currentSession ? "exists" : "none");
         
         if (!currentSession) {
-          // If no session exists, redirect to auth
+          console.log("No current session found, redirecting to auth");
           setSession(null);
           setLoading(false);
           return;
         }
 
-        // Try to refresh the session
+        console.log("Attempting to refresh session...");
         const { data: { session: refreshedSession }, error: refreshError } = 
           await supabase.auth.refreshSession();
 
         if (refreshError) {
           console.error("Session refresh error:", refreshError);
-          // If refresh fails, sign out and redirect
           await supabase.auth.signOut();
           setSession(null);
           toast({
@@ -38,6 +38,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             variant: "destructive",
           });
         } else {
+          console.log("Session refreshed successfully");
           setSession(refreshedSession);
         }
       } catch (error) {
@@ -48,23 +49,41 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    // Initial session check
     checkAndRefreshSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
-      console.log("Auth state changed:", event);
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-        toast({
-          title: "Atsijungta",
-          description: "Sėkmingai atsijungėte iš sistemos",
-        });
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(session);
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession) => {
+      console.log("Auth state changed:", event, "Session:", currentSession ? "exists" : "none");
+      
+      switch (event) {
+        case 'SIGNED_OUT':
+          console.log("User signed out");
+          setSession(null);
+          toast({
+            title: "Atsijungta",
+            description: "Sėkmingai atsijungėte iš sistemos",
+          });
+          break;
+        case 'SIGNED_IN':
+          console.log("User signed in");
+          setSession(currentSession);
+          break;
+        case 'TOKEN_REFRESHED':
+          console.log("Token refreshed");
+          setSession(currentSession);
+          break;
+        default:
+          console.log("Unhandled auth event:", event);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Cleanup subscription
+    return () => {
+      console.log("Cleaning up auth subscription");
+      subscription.unsubscribe();
+    };
   }, [toast]);
 
   if (loading) {
@@ -72,8 +91,10 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!session) {
+    console.log("No session, redirecting to auth page");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  console.log("Session valid, rendering protected content");
   return <>{children}</>;
 };
