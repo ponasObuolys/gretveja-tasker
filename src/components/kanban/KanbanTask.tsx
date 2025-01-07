@@ -32,6 +32,16 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
       {...listeners}
       {...attributes}
     >
+      <div className="flex gap-2 mb-2">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#E6F3FF] text-[#000000]">
+          Užduotis
+        </span>
+        {task.priority > 2 && (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#FF0000] text-[#FFFFFF]">
+            SVARBI UŽDUOTIS
+          </span>
+        )}
+      </div>
       <div className="font-medium">{task.title}</div>
       {task.description && (
         <div className="mt-2 text-sm text-muted-foreground">
