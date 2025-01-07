@@ -11,7 +11,7 @@ const activities = [
   {
     id: 2,
     type: "assignment",
-    message: 'Jonas priskirtas prie užduoties "Atnaujinti dokumentaciją"',
+    message: 'Aurimas priskirtas prie užduoties "Atnaujinti dokumentaciją"',
     icon: Users,
     timestamp: "Prieš 4 val."
   },
