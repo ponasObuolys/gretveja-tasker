@@ -43,12 +43,22 @@ export function KanbanBoard() {
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
+      console.log("Fetching tasks with creator information");
       const { data, error } = await supabase
         .from("tasks")
-        .select("*")
+        .select(`
+          *,
+          creator:created_by (
+            email
+          )
+        `)
         .order("priority", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tasks:", error);
+        throw error;
+      }
+      console.log("Fetched tasks:", data);
       return data;
     },
   });

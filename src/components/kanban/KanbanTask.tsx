@@ -6,7 +6,11 @@ import { format } from "date-fns";
 import { lt } from "date-fns/locale";
 
 interface KanbanTaskProps {
-  task: Tables<"tasks">;
+  task: Tables<"tasks"> & {
+    creator?: {
+      email: string;
+    };
+  };
   isDragging?: boolean;
 }
 
@@ -48,14 +52,17 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
           {task.description}
         </div>
       )}
+      <div className="mt-2 text-sm text-muted-foreground">
+        Prioritetas: {task.priority}
+      </div>
+      <div className="mt-2 text-sm text-muted-foreground">
+        Sukūrė: {task.creator?.email || "Nežinomas vartotojas"}
+      </div>
       {task.deadline && (
         <div className="mt-2 text-sm text-muted-foreground">
           Terminas: {format(new Date(task.deadline), "PPP", { locale: lt })}
         </div>
       )}
-      <div className="mt-2 text-sm">
-        Prioritetas: {task.priority}
-      </div>
     </Card>
   );
 }
