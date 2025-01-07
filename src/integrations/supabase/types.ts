@@ -9,7 +9,104 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      attachments: {
+        Row: {
+          content_type: string
+          created_at: string
+          created_by: string
+          file_name: string
+          file_path: string
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          created_by: string
+          file_name: string
+          file_path: string
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          created_by?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          created_by: string
+          deadline: string | null
+          description: string | null
+          id: string
+          priority: number | null
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          priority?: number | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          priority?: number | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +115,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_status: "REIKIA_PADARYTI" | "VYKDOMA" | "PADARYTA" | "ATMESTA"
+      user_role: "ADMIN" | "USER"
     }
     CompositeTypes: {
       [_ in never]: never
