@@ -7,7 +7,7 @@ import { lt } from "date-fns/locale";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
-    creator?: {
+    profiles?: {
       email: string;
     };
   };
@@ -56,7 +56,7 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
         Prioritetas: {task.priority}
       </div>
       <div className="mt-2 text-sm text-muted-foreground">
-        Sukūrė: {task.creator?.email || "Nežinomas vartotojas"}
+        Sukūrė: {task.profiles?.email || "Nežinomas vartotojas"}
       </div>
       {task.deadline && (
         <div className="mt-2 text-sm text-muted-foreground">

@@ -43,12 +43,14 @@ export function KanbanBoard() {
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
-      console.log("Fetching tasks with creator information");
+      console.log("Fetching tasks with profiles information");
       const { data, error } = await supabase
         .from("tasks")
         .select(`
           *,
-          profiles!tasks_created_by_fkey(email)
+          profiles (
+            email
+          )
         `)
         .order("priority", { ascending: false });
 
@@ -69,7 +71,6 @@ export function KanbanBoard() {
       taskId: string;
       newStatus: TaskStatus;
     }) => {
-      // Check if user is admin before attempting update
       if (userProfile?.role !== 'ADMIN') {
         throw new Error('Insufficient permissions');
       }
@@ -99,7 +100,6 @@ export function KanbanBoard() {
   });
 
   function handleDragStart(event: DragStartEvent) {
-    // Check permissions before allowing drag
     if (userProfile?.role !== 'ADMIN') {
       toast({
         title: "Negalima keisti užduoties",
