@@ -4,24 +4,24 @@ const activities = [
   {
     id: 1,
     type: "status",
-    message: "Užduotis „Sukurti dizainą" pakeista į Padaryta",
+    message: 'Užduotis "Sukurti dizainą" pakeista į "Padaryta"',
     icon: CheckCircle,
-    timestamp: "Prieš 2 val.",
+    timestamp: "Prieš 2 val."
   },
   {
     id: 2,
     type: "assignment",
-    message: "Jonas priskirtas prie užduoties „Atnaujinti dokumentaciją"",
+    message: 'Jonas priskirtas prie užduoties "Atnaujinti dokumentaciją"',
     icon: Users,
-    timestamp: "Prieš 4 val.",
+    timestamp: "Prieš 4 val."
   },
   {
     id: 3,
     type: "deadline",
-    message: "Artėja terminas: „Peržiūrėti kodą"",
+    message: 'Artėja terminas: "Peržiūrėti kodą"',
     icon: Clock,
-    timestamp: "Prieš 6 val.",
-  },
+    timestamp: "Prieš 6 val."
+  }
 ];
 
 export function RecentActivity() {
