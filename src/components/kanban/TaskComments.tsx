@@ -12,6 +12,19 @@ interface TaskCommentsProps {
   isAdmin: boolean;
 }
 
+const formatCommentData = (rawComment: any): TaskComment => {
+  return {
+    id: rawComment.id,
+    task_id: rawComment.task_id,
+    user_id: rawComment.user_id,
+    comment: rawComment.comment,
+    created_at: rawComment.created_at,
+    attachments: rawComment.attachments,
+    links: rawComment.links || [],
+    profiles: rawComment.profiles
+  };
+};
+
 export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -24,8 +37,9 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
         .from("task_comments")
         .select(`
           *,
-          profiles:user_id (
-            email
+          profiles (
+            email,
+            username
           )
         `)
         .eq("task_id", taskId)
@@ -37,7 +51,7 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
       }
 
       console.log("Fetched comments:", data);
-      return data as TaskComment[];
+      return data?.map(formatCommentData) || [];
     },
   });
 
