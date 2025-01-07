@@ -4,16 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 2000; // 2 seconds
+const MAX_DELAY = 30000; // 30 seconds
+
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
 
   // Debounced session refresh with exponential backoff
   const refreshSession = useCallback(async () => {
+    if (isRefreshing || retryCount >= MAX_RETRIES) {
+      return;
+    }
+
     try {
+      setIsRefreshing(true);
+      console.log(`Attempt ${retryCount + 1} of ${MAX_RETRIES} to refresh session`);
+
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
       if (!currentSession) {
@@ -30,19 +42,32 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         
         // Handle rate limiting specifically
         if (refreshError.message.includes('429') || refreshError.message.includes('rate_limit')) {
-          const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 30000); // Max 30 seconds
-          console.log(`Rate limited, backing off for ${backoffTime}ms`);
-          
-          toast({
-            title: "Bandoma prisijungti iš naujo",
-            description: "Palaukite kelias sekundes...",
-          });
-          
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-            refreshSession();
-          }, backoffTime);
-          return;
+          if (retryCount < MAX_RETRIES) {
+            const backoffTime = Math.min(
+              INITIAL_DELAY * Math.pow(2, retryCount),
+              MAX_DELAY
+            );
+            console.log(`Rate limited, backing off for ${backoffTime}ms`);
+            
+            toast({
+              title: "Bandoma prisijungti iš naujo",
+              description: `Bandymas ${retryCount + 1} iš ${MAX_RETRIES}. Palaukite kelias sekundes...`,
+            });
+            
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              setIsRefreshing(false);
+              refreshSession();
+            }, backoffTime);
+            return;
+          } else {
+            console.log("Max retries reached, redirecting to auth");
+            toast({
+              title: "Nepavyko prisijungti",
+              description: "Per daug bandymų. Prašome pabandyti vėliau.",
+              variant: "destructive",
+            });
+          }
         }
 
         // Handle other errors
@@ -62,9 +87,10 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       console.error("Session check error:", error);
       setSession(null);
     } finally {
+      setIsRefreshing(false);
       setLoading(false);
     }
-  }, [toast, retryCount]);
+  }, [toast, retryCount, isRefreshing]);
 
   useEffect(() => {
     // Initial session check
