@@ -48,7 +48,7 @@ export function KanbanBoard() {
         .from("tasks")
         .select(`
           *,
-          creator:profiles(email)
+          profiles!tasks_created_by_fkey(email)
         `)
         .order("priority", { ascending: false });
 
