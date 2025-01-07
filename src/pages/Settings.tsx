@@ -20,25 +20,62 @@ export default function Settings() {
   const { toast } = useToast();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check session on mount
+  // Check session and redirect if not authenticated
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error || !session) {
-        console.error("Session error:", error);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log("Session check result:", session ? "Session found" : "No session", error);
+        
+        if (error) {
+          console.error("Session error:", error);
+          throw error;
+        }
+        
+        if (!session) {
+          console.log("No session found, redirecting to auth");
+          navigate("/auth");
+          return;
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+        toast({
+          title: "Sesija pasibaigė",
+          description: "Prašome prisijungti iš naujo",
+          variant: "destructive",
+        });
         navigate("/auth");
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    checkSession();
-  }, [navigate]);
 
-  const { data: profile, isLoading, error } = useQuery({
+    checkSession();
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
+      console.log("Fetching profile data");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
+      if (!user) {
+        console.error("No user found");
+        throw new Error("No user found");
+      }
       
       const { data, error } = await supabase
         .from("profiles")
@@ -46,19 +83,26 @@ export default function Settings() {
         .eq("id", user.id)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Profile fetch error:", error);
+        throw error;
+      }
+      console.log("Profile data fetched:", data);
       return data as Profile;
     },
+    enabled: !isLoading, // Only fetch profile when session check is complete
   });
 
   const updateProfileMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      console.log("Starting profile update");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
       let avatarUrl = profile?.avatar_url;
 
       if (avatarFile) {
+        console.log("Uploading new avatar");
         const fileExt = avatarFile.name.split('.').pop();
         const filePath = `${user.id}/avatar.${fileExt}`;
         
@@ -66,13 +110,17 @@ export default function Settings() {
           .from('avatars')
           .upload(filePath, avatarFile, { upsert: true });
           
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Avatar upload error:", uploadError);
+          throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
 
         avatarUrl = publicUrl;
+        console.log("New avatar URL:", avatarUrl);
       }
 
       const email = formData.get('email');
@@ -82,6 +130,7 @@ export default function Settings() {
         throw new Error('Invalid form data');
       }
 
+      console.log("Updating profile with:", { email, role, avatarUrl });
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -92,7 +141,11 @@ export default function Settings() {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Profile update error:", error);
+        throw error;
+      }
+      console.log("Profile updated successfully");
     },
     onSuccess: () => {
       toast({
@@ -129,8 +182,8 @@ export default function Settings() {
     return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
 
-  if (error) {
-    console.error("Profile fetch error:", error);
+  if (profileError) {
+    console.error("Profile fetch error:", profileError);
     return <div className="flex items-center justify-center min-h-screen">Įvyko klaida</div>;
   }
 
