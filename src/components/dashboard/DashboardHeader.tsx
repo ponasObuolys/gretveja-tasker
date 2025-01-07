@@ -15,16 +15,30 @@ export function DashboardHeader() {
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      console.log("Attempting to sign out...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error during sign out:", error);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko atsijungti. Bandykite dar kartą.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Sign out successful");
+      navigate("/");
+    } catch (error) {
+      console.error("Unexpected error during sign out:", error);
       toast({
         title: "Klaida",
         description: "Nepavyko atsijungti. Bandykite dar kartą.",
         variant: "destructive",
       });
-      return;
     }
-    navigate("/");
   };
 
   return (
