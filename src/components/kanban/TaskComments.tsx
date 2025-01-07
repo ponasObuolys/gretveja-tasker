@@ -36,7 +36,12 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
       console.log("Fetching comments for task:", taskId);
       const { data, error } = await supabase
         .from("task_comments")
-        .select(`*, profiles (email)`)
+        .select(`
+          *,
+          profiles:user_id (
+            email
+          )
+        `)
         .eq("task_id", taskId)
         .order("created_at", { ascending: false });
 
