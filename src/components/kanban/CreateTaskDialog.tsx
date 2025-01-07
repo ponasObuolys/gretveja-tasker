@@ -24,6 +24,8 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { TaskPriorityField } from "./TaskPriorityField";
+import { TaskFileUploadField } from "./TaskFileUploadField";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Pavadinimas yra privalomas"),
@@ -172,19 +174,7 @@ export function CreateTaskDialog() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prioritetas (1-5)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={1} max={5} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <TaskPriorityField />
             <FormField
               control={form.control}
               name="deadline"
@@ -198,17 +188,7 @@ export function CreateTaskDialog() {
                 </FormItem>
               )}
             />
-            <FormItem>
-              <FormLabel>Prisegti failai</FormLabel>
-              <FormControl>
-                <Input
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="cursor-pointer"
-                />
-              </FormControl>
-            </FormItem>
+            <TaskFileUploadField onFileChange={handleFileChange} />
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Kuriama..." : "Sukurti"}
             </Button>
