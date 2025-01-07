@@ -42,8 +42,8 @@ export function DashboardHeader() {
   };
 
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="relative w-full max-w-lg">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 lg:p-6 gap-4">
+      <div className="relative w-full sm:max-w-lg">
         <input
           type="text"
           placeholder="Ieškoti užduočių..."
@@ -64,7 +64,7 @@ export function DashboardHeader() {
         </svg>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-end space-x-2 sm:space-x-4">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

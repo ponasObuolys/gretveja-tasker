@@ -13,11 +13,11 @@ const data = [
 
 export function TasksOverview() {
   return (
-    <div className="bg-[#242832] rounded-lg p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-[#242832] rounded-lg p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h3 className="text-lg font-medium">Užduočių statistika</h3>
         <Select defaultValue="30">
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Pasirinkite laikotarpį" />
           </SelectTrigger>
           <SelectContent>
@@ -28,12 +28,28 @@ export function TasksOverview() {
         </Select>
       </div>
 
-      <div className="h-[300px]">
+      <div className="h-[200px] sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <XAxis dataKey="date" stroke="#64748B" />
-            <YAxis stroke="#64748B" />
-            <Tooltip />
+            <XAxis 
+              dataKey="date" 
+              stroke="#64748B" 
+              fontSize={12}
+              tickMargin={10}
+            />
+            <YAxis 
+              stroke="#64748B" 
+              fontSize={12}
+              tickMargin={10}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                background: '#242832',
+                border: '1px solid #374151',
+                borderRadius: '8px',
+                color: '#fff'
+              }}
+            />
             <Line
               type="monotone"
               dataKey="tasks"
