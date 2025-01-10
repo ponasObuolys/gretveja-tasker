@@ -15,27 +15,37 @@ const Auth = () => {
   const getErrorMessage = (error: AuthError) => {
     console.log("Auth error details:", error);
     
-    if (error instanceof AuthApiError) {
-      switch (error.status) {
-        case 400:
-          if (error.message.includes("Invalid login credentials")) {
-            return "Neteisingas el. paštas arba slaptažodis";
-          }
-          if (error.message.includes("Email not confirmed")) {
-            return "Prašome patvirtinti el. paštą prieš prisijungiant";
-          }
-          return "Neteisingi prisijungimo duomenys";
-        case 422:
-          return "Prašome įvesti teisingą el. paštą ir slaptažodį";
-        case 429:
-          return "Per daug bandymų prisijungti. Pabandykite vėliau";
-        default:
-          console.error("Unhandled auth error:", error);
-          return "Įvyko klaida bandant prisijungti";
+    // Try to parse the error body if it's a string
+    let errorBody;
+    if (error instanceof AuthApiError && typeof error.message === 'string') {
+      try {
+        errorBody = JSON.parse(error.message);
+      } catch (e) {
+        errorBody = { code: error.message };
       }
     }
-    console.error("Unexpected error type:", error);
-    return "Įvyko nenumatyta klaida";
+    
+    // Get the error code either from parsed body or directly from error
+    const errorCode = errorBody?.code || error.message;
+    console.log("Error code:", errorCode);
+
+    switch (errorCode) {
+      case "invalid_credentials":
+        return "Neteisingas el. paštas arba slaptažodis";
+      case "invalid_grant":
+        return "Neteisingi prisijungimo duomenys";
+      case "email_not_confirmed":
+        return "Prašome patvirtinti el. paštą prieš prisijungiant";
+      case "invalid_email":
+        return "Neteisingas el. pašto formatas";
+      case "user_not_found":
+        return "Vartotojas su šiuo el. paštu nerastas";
+      case "too_many_requests":
+        return "Per daug bandymų prisijungti. Pabandykite vėliau";
+      default:
+        console.error("Unhandled auth error:", error);
+        return "Įvyko klaida bandant prisijungti. Patikrinkite prisijungimo duomenis.";
+    }
   };
 
   useEffect(() => {
