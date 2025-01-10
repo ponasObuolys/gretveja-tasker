@@ -13,7 +13,7 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
 
   const getErrorMessage = (error: AuthError) => {
-    console.log("Auth error:", error);
+    console.log("Auth error details:", error);
     
     if (error instanceof AuthApiError) {
       switch (error.status) {
@@ -21,21 +21,31 @@ const Auth = () => {
           if (error.message.includes("Invalid login credentials")) {
             return "Neteisingas el. paštas arba slaptažodis";
           }
-          break;
+          if (error.message.includes("Email not confirmed")) {
+            return "Prašome patvirtinti el. paštą prieš prisijungiant";
+          }
+          return "Neteisingi prisijungimo duomenys";
         case 422:
           return "Prašome įvesti teisingą el. paštą ir slaptažodį";
         case 429:
           return "Per daug bandymų prisijungti. Pabandykite vėliau";
         default:
+          console.error("Unhandled auth error:", error);
           return "Įvyko klaida bandant prisijungti";
       }
     }
+    console.error("Unexpected error type:", error);
     return "Įvyko nenumatyta klaida";
   };
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Session check error:", sessionError);
+        setError(getErrorMessage(sessionError));
+        return;
+      }
       if (session) {
         console.log("Existing session found, redirecting to dashboard");
         navigate("/");
@@ -80,6 +90,7 @@ const Auth = () => {
       } else if (event === "USER_UPDATED") {
         const { error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
+          console.error("Session update error:", sessionError);
           setError(getErrorMessage(sessionError));
         }
       }
