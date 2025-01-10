@@ -11,6 +11,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getErrorMessage = (error: AuthError) => {
     console.log("Auth error details:", error);
@@ -32,33 +33,43 @@ const Auth = () => {
     switch (errorCode) {
       case "invalid_credentials":
         return "Neteisingas el. paštas arba slaptažodis";
+      case "email_not_confirmed":
+        return "Patvirtinkite el. paštą";
+      case "user_not_found":
+        return "Vartotojas nerastas";
+      case "too_many_requests":
+        return "Per daug bandymų. Bandykite vėliau";
       case "invalid_grant":
         return "Neteisingi prisijungimo duomenys";
-      case "email_not_confirmed":
-        return "Prašome patvirtinti el. paštą prieš prisijungiant";
       case "invalid_email":
         return "Neteisingas el. pašto formatas";
-      case "user_not_found":
-        return "Vartotojas su šiuo el. paštu nerastas";
-      case "too_many_requests":
-        return "Per daug bandymų prisijungti. Pabandykite vėliau";
       default:
         console.error("Unhandled auth error:", error);
-        return "Įvyko klaida bandant prisijungti. Patikrinkite prisijungimo duomenis.";
+        return "Įvyko klaida. Bandykite dar kartą vėliau.";
     }
   };
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Session check error:", sessionError);
-        setError(getErrorMessage(sessionError));
-        return;
-      }
-      if (session) {
-        console.log("Existing session found, redirecting to dashboard");
-        navigate("/");
+      setIsLoading(true);
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("Session check error:", sessionError);
+          setError(getErrorMessage(sessionError));
+          return;
+        }
+        if (session) {
+          console.log("Existing session found, redirecting to dashboard");
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
+        if (error instanceof AuthError) {
+          setError(getErrorMessage(error));
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -69,7 +80,6 @@ const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         try {
-          // Check user profile and role
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("role")
@@ -96,13 +106,12 @@ const Auth = () => {
           setError(error instanceof Error ? error.message : "Įvyko nenumatyta klaida");
         }
       } else if (event === "SIGNED_OUT") {
-        setError(null); // Clear any existing errors
-      } else if (event === "USER_UPDATED") {
-        const { error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("Session update error:", sessionError);
-          setError(getErrorMessage(sessionError));
-        }
+        setError(null);
+      } else if (event === "PASSWORD_RECOVERY") {
+        toast({
+          title: "Slaptažodžio atkūrimas",
+          description: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos",
+        });
       }
     });
 
@@ -125,8 +134,10 @@ const Auth = () => {
         </div>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="border-red-500/50 bg-red-500/10">
+            <AlertDescription className="text-red-400">
+              {error}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -141,14 +152,20 @@ const Auth = () => {
                   brandAccent: '#FF3355',
                   defaultButtonBackground: '#FF4B6E',
                   defaultButtonBackgroundHover: '#FF3355',
+                  inputBackground: '#1A1D24',
+                  inputBorder: '#374151',
+                  inputBorderHover: '#4B5563',
+                  inputBorderFocus: '#FF4B6E',
                 }
               }
             },
             className: {
               container: 'text-white',
               label: 'text-white',
-              button: 'bg-[#FF4B6E] hover:bg-[#FF3355] text-white',
+              button: 'bg-[#FF4B6E] hover:bg-[#FF3355] text-white transition-colors duration-200',
               input: 'bg-[#1A1D24] border-gray-700 text-white',
+              loader: 'border-t-[#FF4B6E]',
+              message: 'text-red-400'
             }
           }}
           localization={{
@@ -158,21 +175,31 @@ const Auth = () => {
                 password_label: "Slaptažodis",
                 email_input_placeholder: "Jūsų el. paštas",
                 password_input_placeholder: "Jūsų slaptažodis",
-                button_label: "Prisijungti",
+                button_label: isLoading ? "Jungiamasi..." : "Prisijungti",
                 loading_button_label: "Jungiamasi...",
                 social_provider_text: "Prisijungti su {{provider}}",
-                link_text: "Jau turite paskyrą? Prisijunkite"
+                link_text: "Jau turite paskyrą? Prisijunkite",
+                forgotten_password_label: "Pamiršote slaptažodį?"
               },
               sign_up: {
                 email_label: "El. paštas",
                 password_label: "Slaptažodis",
                 email_input_placeholder: "Jūsų el. paštas",
                 password_input_placeholder: "Jūsų slaptažodis",
-                button_label: "Registruotis",
+                button_label: isLoading ? "Registruojama..." : "Registruotis",
                 loading_button_label: "Registruojama...",
                 social_provider_text: "Registruotis su {{provider}}",
                 link_text: "Neturite paskyros? Registruokitės",
                 confirmation_text: "Patikrinkite savo el. paštą dėl patvirtinimo nuorodos"
+              },
+              forgotten_password: {
+                email_label: "El. paštas",
+                password_label: "Slaptažodis",
+                email_input_placeholder: "Jūsų el. paštas",
+                button_label: isLoading ? "Siunčiama..." : "Siųsti atkūrimo nuorodą",
+                loading_button_label: "Siunčiama...",
+                link_text: "Pamiršote slaptažodį?",
+                confirmation_text: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos"
               }
             }
           }}
