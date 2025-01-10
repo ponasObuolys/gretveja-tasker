@@ -5,11 +5,33 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { AuthError, AuthApiError } from "@supabase/supabase-js";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+
+  const getErrorMessage = (error: AuthError) => {
+    console.log("Auth error:", error);
+    
+    if (error instanceof AuthApiError) {
+      switch (error.status) {
+        case 400:
+          if (error.message.includes("Invalid login credentials")) {
+            return "Neteisingas el. paštas arba slaptažodis";
+          }
+          break;
+        case 422:
+          return "Prašome įvesti teisingą el. paštą ir slaptažodį";
+        case 429:
+          return "Per daug bandymų prisijungti. Pabandykite vėliau";
+        default:
+          return "Įvyko klaida bandant prisijungti";
+      }
+    }
+    return "Įvyko nenumatyta klaida";
+  };
 
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -52,6 +74,13 @@ const Auth = () => {
         } catch (error) {
           console.error("Login error:", error);
           setError(error instanceof Error ? error.message : "Įvyko nenumatyta klaida");
+        }
+      } else if (event === "SIGNED_OUT") {
+        setError(null); // Clear any existing errors
+      } else if (event === "USER_UPDATED") {
+        const { error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          setError(getErrorMessage(sessionError));
         }
       }
     });
