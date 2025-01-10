@@ -44,4 +44,52 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom Scrollbar Styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #ff4b6e #1e2024;
+  }
+
+  /* Webkit Scrollbar Styling */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1e2024;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #ff4b6e;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #ff3355;
+  }
+}
+
+/* Responsive Layout Classes */
+@layer components {
+  .responsive-container {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .button-group {
+    @apply flex flex-wrap gap-2 sm:gap-3 md:gap-4;
+  }
+
+  .responsive-card {
+    @apply flex flex-col sm:flex-row items-start sm:items-center 
+           p-4 sm:p-6 rounded-lg bg-card
+           transition-all duration-200 ease-in-out;
+  }
+
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 
+           gap-4 sm:gap-6;
+  }
 }
