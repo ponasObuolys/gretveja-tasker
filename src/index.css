@@ -44,52 +44,55 @@
   body {
     @apply bg-background text-foreground;
   }
+}
 
-  /* Custom Scrollbar Styling */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #ff4b6e #1e2024;
+@layer components {
+  .attachment-section {
+    @apply flex flex-col gap-4 my-4;
   }
 
-  /* Webkit Scrollbar Styling */
-  *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  .attached-files {
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3;
   }
 
-  *::-webkit-scrollbar-track {
-    background: #1e2024;
-    border-radius: 4px;
+  .file-item {
+    @apply relative p-2 rounded-lg bg-secondary/50;
   }
 
-  *::-webkit-scrollbar-thumb {
-    background: #ff4b6e;
-    border-radius: 4px;
+  .delete-file {
+    @apply absolute -top-2 -right-2 p-1 rounded-full bg-destructive;
   }
 
-  *::-webkit-scrollbar-thumb:hover {
-    background: #ff3355;
+  .modal-actions {
+    @apply relative;
+  }
+
+  .delete-button {
+    @apply absolute right-0 top-0;
   }
 }
 
-/* Responsive Layout Classes */
-@layer components {
-  .responsive-container {
-    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  }
+/* Custom Scrollbar Styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff4b6e #1e2024;
+}
 
-  .button-group {
-    @apply flex flex-wrap gap-2 sm:gap-3 md:gap-4;
-  }
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  .responsive-card {
-    @apply flex flex-col sm:flex-row items-start sm:items-center 
-           p-4 sm:p-6 rounded-lg bg-card
-           transition-all duration-200 ease-in-out;
-  }
+*::-webkit-scrollbar-track {
+  background: #1e2024;
+  border-radius: 4px;
+}
 
-  .responsive-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 
-           gap-4 sm:gap-6;
-  }
+*::-webkit-scrollbar-thumb {
+  background: #ff4b6e;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #ff3355;
 }

@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Star, Trash2, FileText } from "lucide-react";
+import { Star, Trash2, FileText, X } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 import { TaskComments } from "./TaskComments";
 import { cn } from "@/lib/utils";
@@ -152,14 +152,16 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
             <div className="flex items-start justify-between gap-4">
               <DialogTitle className="text-xl">{task.title}</DialogTitle>
               {isAdmin && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="shrink-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="modal-actions">
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="delete-button"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             </div>
           </DialogHeader>
@@ -190,7 +192,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
               </p>
 
               {isAdmin && (
-                <div className="space-y-4">
+                <div className="attachment-section">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -202,11 +204,29 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
                         multiple
                         onChange={handleFileChange}
                         className="absolute inset-0 opacity-0 cursor-pointer"
-                        accept=".pdf,.docx,.xlsx,.txt"
+                        accept="*/*"
                       />
                       <FileText className="h-4 w-4 mr-2" />
                       {isUploading ? "Įkeliama..." : "Prisegti failus"}
                     </Button>
+                  </div>
+                  
+                  <div className="attached-files">
+                    {task.attachments?.map((attachment: any) => (
+                      <div key={attachment.id} className="file-item">
+                        <span className="text-sm truncate block">{attachment.file_name}</span>
+                        {isAdmin && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="delete-file"
+                            onClick={() => handleDeleteFile(attachment.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
