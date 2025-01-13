@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles: {
+  created_by_profile: {
+    email: string | null;
+  } | null;
+  moved_by_profile: {
     email: string | null;
   } | null;
 };
@@ -17,9 +20,8 @@ export function RecentActivity() {
         .from("tasks")
         .select(`
           *,
-          profiles (
-            email
-          )
+          created_by_profile:profiles!tasks_created_by_fkey(email),
+          moved_by_profile:profiles!tasks_moved_by_fkey(email)
         `)
         .order('updated_at', { ascending: false })
         .limit(5);
