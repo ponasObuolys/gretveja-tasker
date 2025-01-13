@@ -37,7 +37,7 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
         .from("task_comments")
         .select(`
           *,
-          profiles:user_id (
+          profiles (
             email,
             id
           )
