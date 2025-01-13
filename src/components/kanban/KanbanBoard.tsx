@@ -14,6 +14,12 @@ interface KanbanBoardProps {
   showDeleteMode?: boolean;
 }
 
+type TaskWithProfile = Tables<"tasks"> & {
+  profiles?: {
+    email: string;
+  } | null;
+};
+
 export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -42,12 +48,12 @@ export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBo
       }
 
       console.log("Fetched tasks:", data);
-      return data;
+      return data as TaskWithProfile[];
     },
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    setActiveId(event.active.id.toString());
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -55,7 +61,7 @@ export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBo
     
     if (!over) return;
 
-    const taskId = active.id;
+    const taskId = active.id.toString();
     const newStatus = over.id as Tables<"tasks">["status"];
 
     try {
@@ -97,7 +103,7 @@ export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBo
   const columns: {
     title: string;
     id: Tables<"tasks">["status"];
-    tasks: Tables<"tasks">[];
+    tasks: TaskWithProfile[];
   }[] = [
     {
       title: "Reikia padaryti",

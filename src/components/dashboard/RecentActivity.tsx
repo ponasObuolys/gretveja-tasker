@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles: Pick<Tables<"profiles">, "email"> | null;
+  profiles: {
+    email: string | null;
+  } | null;
 };
 
 export function RecentActivity() {
