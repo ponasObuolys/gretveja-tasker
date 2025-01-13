@@ -21,7 +21,7 @@ const formatCommentData = (rawComment: any): TaskComment => {
     created_at: rawComment.created_at,
     attachments: rawComment.attachments,
     links: rawComment.links || [],
-    user: rawComment.user
+    user: rawComment.profiles
   };
 };
 
@@ -37,7 +37,7 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
         .from("task_comments")
         .select(`
           *,
-          user:user_id (
+          profiles:user_id (
             email,
             id
           )
