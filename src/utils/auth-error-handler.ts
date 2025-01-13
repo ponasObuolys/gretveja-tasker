@@ -4,7 +4,7 @@ export const getErrorMessage = (error: AuthError) => {
   console.log("Auth error details:", error);
   
   let errorBody;
-  if (error instanceof AuthApiError && typeof error.message === 'string') {
+  if (error instanceof AuthApiError && error.message) {
     try {
       errorBody = JSON.parse(error.message);
     } catch (e) {
@@ -28,6 +28,8 @@ export const getErrorMessage = (error: AuthError) => {
       return "Neteisingi prisijungimo duomenys";
     case "invalid_email":
       return "Neteisingas el. pašto formatas";
+    case "http_client_error":
+      return "Prisijungimo klaida. Patikrinkite prisijungimo duomenis";
     default:
       console.error("Unhandled auth error:", error);
       return "Įvyko klaida. Bandykite dar kartą vėliau.";

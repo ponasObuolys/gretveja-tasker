@@ -28,17 +28,21 @@ const Auth = () => {
   useEffect(() => {
     const clearStaleSession = async () => {
       console.log("Checking for and clearing stale session");
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Current session state:", {
-        exists: !!session,
-        user: session?.user?.email,
-        expiresAt: session?.expires_at
-      });
-      
-      if (!session) {
-        console.log("No active session found, clearing any stale auth state");
-        await supabase.auth.signOut();
-        localStorage.removeItem('supabase.auth.token');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Current session state:", {
+          exists: !!session,
+          user: session?.user?.email,
+          expiresAt: session?.expires_at
+        });
+        
+        if (!session) {
+          console.log("No active session found, clearing any stale auth state");
+          await supabase.auth.signOut();
+          localStorage.removeItem('supabase.auth.token');
+        }
+      } catch (error) {
+        console.error("Error clearing stale session:", error);
       }
     };
 
@@ -57,7 +61,8 @@ const Auth = () => {
           console.log("Active session found:", {
             email: session.user.email,
             id: session.user.id,
-            role: session.user.role
+            role: session.user.role,
+            lastSignInAt: session.user.last_sign_in_at
           });
           navigate("/");
         }
@@ -75,7 +80,8 @@ const Auth = () => {
       console.log("Auth event:", event, {
         hasSession: !!session,
         userEmail: session?.user?.email,
-        userId: session?.user?.id
+        userId: session?.user?.id,
+        lastSignIn: session?.user?.last_sign_in_at
       });
       
       if (event === "SIGNED_IN" && session?.user) {
@@ -141,6 +147,10 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           redirectTo={`${window.location.origin}/auth/callback`}
+          onError={(error) => {
+            console.error("Auth UI error:", error);
+            setError(getErrorMessage(error));
+          }}
         />
       )}
     </AuthContainer>
