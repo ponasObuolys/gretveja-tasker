@@ -10,7 +10,8 @@ export const authLocalization = {
       button_label: "Prisijungti",
       loading_button_label: "Jungiamasi...",
       social_provider_text: "Prisijungti su {{provider}}",
-      link_text: "Jau turite paskyrą? Prisijunkite"
+      link_text: "Jau turite paskyrą? Prisijunkite",
+      confirmation_text: "Patikrinkite savo el. paštą"
     },
     sign_up: {
       email_label: "El. paštas",
@@ -31,6 +32,11 @@ export const authLocalization = {
       button_label: "Siųsti atkūrimo nuorodą",
       loading_button_label: "Siunčiama atkūrimo nuoroda...",
       confirmation_text: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos"
+    },
+    magic_link: {
+      button_label: "Siųsti prisijungimo nuorodą",
+      loading_button_label: "Siunčiama nuoroda...",
+      confirmation_text: "Patikrinkite savo el. paštą"
     }
-  }
-} satisfies { variables: I18nVariables };
+  } satisfies I18nVariables
+};

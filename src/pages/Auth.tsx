@@ -17,56 +17,39 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    console.log('Auth Component Debug Info:');
-    console.log('Supabase client initialized:', !!supabase);
-    console.log('Current URL:', window.location.href);
-    console.log('Environment:', import.meta.env.MODE);
-    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('Auth enabled:', !!supabase.auth);
-
     const checkExistingSession = async () => {
       setIsLoading(true);
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
         if (sessionError) {
           console.error("Session check error:", sessionError);
-          setError(getErrorMessage(sessionError));
-          return;
+          throw sessionError;
         }
-        if (session) {
-          console.log("Debug - Existing session found:", {
-            user: session.user.email,
-            lastSignIn: session.user.last_sign_in_at,
-            sessionExpiry: session.expires_at,
-            provider: session.user.app_metadata.provider,
+
+        if (session?.user) {
+          console.log("Active session found:", {
+            email: session.user.email,
+            id: session.user.id,
+            role: session.user.role
           });
           navigate("/");
-        } else {
-          console.log("Debug - No existing session");
         }
       } catch (error) {
         console.error("Session check failed:", error);
-        if (error instanceof AuthError) {
-          setError(getErrorMessage(error));
-        }
+        setError(error instanceof AuthError ? getErrorMessage(error) : "Sesijos patikrinimo klaida");
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     checkExistingSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, "Session:", session ? {
-        email: session.user.email,
-        provider: session.user.app_metadata.provider,
-        lastSignIn: session.user.last_sign_in_at,
-      } : "none");
+      console.log("Auth event:", event);
       
-      if (event === "SIGNED_IN" && session) {
+      if (event === "SIGNED_IN" && session?.user) {
         try {
-          console.log("Sign in attempt for user:", session.user.email);
-          
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("role")
@@ -74,54 +57,34 @@ const Auth = () => {
             .single();
 
           if (profileError) {
-            console.error("Error fetching profile:", profileError);
-            throw new Error("Nepavyko patikrinti vartotojo profilio");
+            throw new Error(profileError.message);
           }
 
-          console.log("User profile retrieved:", {
-            role: profile?.role,
-            userId: session.user.id
-          });
-          
+          if (!profile) {
+            throw new Error("Profilis nerastas");
+          }
+
           toast({
             title: "Sėkmingai prisijungta",
-            description: profile?.role === "ADMIN" ? 
+            description: profile.role === "ADMIN" ? 
               "Sveiki sugrįžę, administratoriau!" : 
-              "Sveiki sugrįžę!",
+              "Sveiki sugrįžę!"
           });
 
           navigate("/");
         } catch (error) {
-          console.error("Login error:", error);
-          setError(error instanceof Error ? error.message : "Įvyko nenumatyta klaida");
+          console.error("Profile fetch error:", error);
+          setError(error instanceof Error ? error.message : "Profilio gavimo klaida");
         }
       } else if (event === "SIGNED_OUT") {
-        console.log("User signed out");
         setError(null);
-      } else if (event === "PASSWORD_RECOVERY") {
-        console.log("Password recovery initiated");
-        toast({
-          title: "Slaptažodžio atkūrimas",
-          description: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos",
-        });
       }
     });
 
     return () => {
-      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
-
-  if (isLoading) {
-    return (
-      <AuthContainer>
-        <div className="flex items-center justify-center">
-          <span className="text-gray-400">Kraunama...</span>
-        </div>
-      </AuthContainer>
-    );
-  }
 
   return (
     <AuthContainer>
@@ -133,13 +96,23 @@ const Auth = () => {
         </Alert>
       )}
 
-      <SupabaseAuth 
-        supabaseClient={supabase}
-        appearance={authAppearance}
-        localization={{ variables: authLocalization.variables }}
-        providers={[]}
-        redirectTo={`${window.location.origin}/auth/callback`}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400">Kraunama...</span>
+        </div>
+      ) : (
+        <SupabaseAuth 
+          supabaseClient={supabase}
+          appearance={authAppearance}
+          localization={{ variables: authLocalization.variables }}
+          providers={[]}
+          redirectTo={`${window.location.origin}/auth/callback`}
+          onError={(error) => {
+            console.error("Auth error:", error);
+            setError(getErrorMessage(error));
+          }}
+        />
+      )}
     </AuthContainer>
   );
 };
