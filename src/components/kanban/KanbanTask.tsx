@@ -14,15 +14,14 @@ import { supabase } from "@/integrations/supabase/client";
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
     profiles?: {
-      email: string;
-    };
+      email: string | null;
+    } | null;
   };
-  isDragging?: boolean;
 }
 
-export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
+export function KanbanTask({ task }: KanbanTaskProps) {
   const [showComments, setShowComments] = useState(false);
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
 
@@ -49,16 +48,18 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
       }
     : undefined;
 
+  const isAdmin = userProfile?.role === "ADMIN";
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
       className={cn(
         "p-4 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors",
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
+        !isAdmin && "cursor-default"
       )}
-      {...listeners}
-      {...attributes}
+      {...(isAdmin ? { ...listeners, ...attributes } : {})}
     >
       <div className="flex gap-2 mb-2">
         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#E6F3FF] text-[#000000]">

@@ -1,21 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { KanbanColumn } from "./KanbanColumn";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskFilter } from "../dashboard/DashboardLayout";
 import { format } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
 }
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles: {
+  profiles?: {
     email: string | null;
   } | null;
 };
 
 export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks", filter],
     queryFn: async () => {
@@ -29,7 +34,6 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
           )
         `);
 
-      // Apply filters based on the selected tab
       if (filter === "priority") {
         query = query.gte("priority", 3);
       } else if (filter === "recent") {
@@ -49,6 +53,68 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
       return (data || []) as unknown as TaskWithProfile[];
     },
   });
+
+  const updateTaskStatus = useMutation({
+    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({ 
+          status: newStatus,
+          moved_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", taskId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast({
+        title: "Užduoties statusas atnaujintas",
+        description: "Užduotis sėkmingai perkelta į kitą stulpelį",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating task status:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti užduoties statuso",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const newStatus = over.id as Tables<"tasks">["status"];
+    const task = tasks?.find(t => t.id === taskId);
+    
+    if (!task) return;
+
+    // Validate allowed transitions
+    const isValidTransition = (
+      (task.status === "REIKIA_PADARYTI" && newStatus === "VYKDOMA") ||
+      (task.status === "VYKDOMA" && (newStatus === "PADARYTA" || newStatus === "ATMESTA"))
+    );
+
+    if (!isValidTransition) {
+      toast({
+        title: "Negalimas veiksmas",
+        description: "Šis statusas negalimas šiai užduočiai",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateTaskStatus.mutate({ taskId, newStatus });
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -82,15 +148,17 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {columns.map((column) => (
-        <KanbanColumn
-          key={column.id}
-          id={column.id}
-          title={column.title}
-          tasks={column.tasks}
-        />
-      ))}
-    </div>
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {columns.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            id={column.id}
+            title={column.title}
+            tasks={column.tasks}
+          />
+        ))}
+      </div>
+    </DndContext>
   );
 }
