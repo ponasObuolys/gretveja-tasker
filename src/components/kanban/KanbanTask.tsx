@@ -1,14 +1,12 @@
 import { useDraggable } from "@dnd-kit/core";
-import { format, isPast } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
-import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { TaskDetailsModal } from "./TaskDetailsModal";
-import { Checkbox } from "@/components/ui/checkbox";
+import { TaskContent } from "./TaskContent";
+import { TaskDragHandle } from "./TaskDragHandle";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -54,10 +52,8 @@ export function KanbanTask({
   });
 
   const isAdmin = profile?.role === "ADMIN";
-  const isOverdue = task.deadline ? isPast(new Date(task.deadline)) : false;
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent click when dragging
     if (isDragging) return;
     
     if (isSelectionMode && onSelect) {
@@ -79,56 +75,20 @@ export function KanbanTask({
         )}
         onClick={handleClick}
       >
-        {/* Drag Handle Area */}
-        <div
-          ref={setNodeRef}
-          {...(task.is_commenting ? {} : { ...attributes, ...listeners })}
-          className="absolute inset-0 z-9"
-          onClick={(e) => e.stopPropagation()}
+        <TaskDragHandle
+          disabled={task.is_commenting}
+          attributes={attributes}
+          listeners={listeners}
+          setNodeRef={setNodeRef}
         />
 
         <div className="relative z-10">
-          <div className="flex items-start gap-2">
-            {isSelectionMode && (
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={() => onSelect?.(task.id)}
-                className="mt-1"
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-            <div className="flex-1 space-y-3">
-              <div className="space-y-2">
-                <h4 className="text-base font-bold leading-tight">{task.title}</h4>
-                {task.description && (
-                  <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed">
-                    {task.description}
-                  </p>
-                )}
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-2">
-                {task.deadline && (
-                  <Badge 
-                    variant="secondary" 
-                    className={cn(
-                      "text-xs",
-                      isOverdue && "bg-[#ff4b6e] text-white"
-                    )}
-                  >
-                    {format(new Date(task.deadline), "MM-dd")}
-                  </Badge>
-                )}
-                {task.priority >= 3 && (
-                  <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
-                )}
-              </div>
-
-              <div className="text-xs text-gray-400">
-                {task.created_by_profile?.email ?? "Unknown"}
-              </div>
-            </div>
-          </div>
+          <TaskContent
+            task={task}
+            isSelectionMode={isSelectionMode}
+            isSelected={isSelected}
+            onSelect={onSelect}
+          />
         </div>
       </div>
 
