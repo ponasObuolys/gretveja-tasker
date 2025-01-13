@@ -16,13 +16,28 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Reset state when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log("Auth component unmounting - resetting state");
+      setError(null);
+      setIsLoading(false);
+    };
+  }, []);
+
   useEffect(() => {
     const clearStaleSession = async () => {
       console.log("Checking for and clearing stale session");
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session state:", {
+        exists: !!session,
+        user: session?.user?.email,
+        expiresAt: session?.expires_at
+      });
+      
       if (!session) {
         console.log("No active session found, clearing any stale auth state");
-        await supabase.auth.signOut({ scope: 'local' });
+        await supabase.auth.signOut();
         localStorage.removeItem('supabase.auth.token');
       }
     };
