@@ -19,8 +19,7 @@ const Auth = () => {
   // Debug: Check Supabase configuration
   useEffect(() => {
     console.log('Supabase Configuration Check:');
-    console.log('URL configured correctly:', supabase.getClientOptions().url === 'https://mjerbeyhmfstcuuzjedi.supabase.co');
-    console.log('API key exists:', !!supabase.getClientOptions().anon_key);
+    console.log('Supabase client initialized');
   }, []);
 
   useEffect(() => {
