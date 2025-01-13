@@ -3,6 +3,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskFilter } from "../dashboard/DashboardLayout";
 import { format } from "date-fns";
+import { Tables } from "@/integrations/supabase/types";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
@@ -41,7 +42,11 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
     return <div>Loading...</div>;
   }
 
-  const columns = [
+  const columns: {
+    title: string;
+    id: Tables<"tasks">["status"];
+    tasks: Tables<"tasks">[];
+  }[] = [
     {
       title: "Reikia padaryti",
       id: "REIKIA_PADARYTI",
