@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { KanbanTask } from "./KanbanTask";
 import { Tables } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 
 interface KanbanColumnProps {
   id: Tables<"tasks">["status"];

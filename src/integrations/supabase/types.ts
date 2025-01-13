@@ -126,6 +126,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          is_commenting: boolean | null
           moved_by: string | null
           priority: number | null
           status: Database["public"]["Enums"]["task_status"] | null
@@ -138,6 +139,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_commenting?: boolean | null
           moved_by?: string | null
           priority?: number | null
           status?: Database["public"]["Enums"]["task_status"] | null
@@ -150,6 +152,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_commenting?: boolean | null
           moved_by?: string | null
           priority?: number | null
           status?: Database["public"]["Enums"]["task_status"] | null
@@ -178,7 +181,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      toggle_comment: {
+        Args: {
+          task_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       task_status: "REIKIA_PADARYTI" | "VYKDOMA" | "PADARYTA" | "ATMESTA"
