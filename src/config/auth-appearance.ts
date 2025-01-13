@@ -17,6 +17,13 @@ export const authAppearance = {
         messageText: '#FF4B6E',
         anchorTextColor: '#FF4B6E',
         dividerBackground: '#374151'
+      },
+      space: {
+        inputPadding: '1rem',
+        buttonPadding: '1rem'
+      },
+      borderWidths: {
+        inputBorderWidth: '1px'
       }
     }
   },

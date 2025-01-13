@@ -15,10 +15,15 @@ const Auth = () => {
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormReady, setIsFormReady] = useState(false);
 
-  // Reset state when component unmounts
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsFormReady(true);
+    }, 100);
+
     return () => {
+      clearTimeout(timer);
       console.log("Auth component unmounting - resetting state");
       setError(null);
       setIsLoading(false);
@@ -132,6 +137,16 @@ const Auth = () => {
     };
   }, [navigate, toast]);
 
+  if (!isFormReady || isLoading) {
+    return (
+      <AuthContainer>
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400">Kraunama...</span>
+        </div>
+      </AuthContainer>
+    );
+  }
+
   return (
     <AuthContainer>
       {error && (
@@ -142,19 +157,16 @@ const Auth = () => {
         </Alert>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center">
-          <span className="text-gray-400">Kraunama...</span>
-        </div>
-      ) : (
-        <SupabaseAuth 
-          supabaseClient={supabase}
-          appearance={authAppearance}
-          localization={{ variables: authLocalization.variables }}
-          providers={[]}
-          redirectTo={`${window.location.origin}/auth/callback`}
-        />
-      )}
+      <SupabaseAuth 
+        supabaseClient={supabase}
+        appearance={{
+          ...authAppearance,
+          complete: true
+        }}
+        localization={{ variables: authLocalization.variables }}
+        providers={[]}
+        redirectTo={`${window.location.origin}/auth/callback`}
+      />
     </AuthContainer>
   );
 };
