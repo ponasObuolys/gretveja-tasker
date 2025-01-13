@@ -16,7 +16,6 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Debug: Check Supabase configuration
   useEffect(() => {
     console.log('Auth Component Debug Info:');
     console.log('Supabase client initialized');
@@ -24,9 +23,7 @@ const Auth = () => {
     console.log('Environment:', import.meta.env.MODE);
     console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
     console.log('Auth enabled:', !!supabase.auth);
-  }, []);
 
-  useEffect(() => {
     const checkExistingSession = async () => {
       setIsLoading(true);
       try {
