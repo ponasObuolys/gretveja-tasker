@@ -59,6 +59,7 @@ export function KanbanTask({
 
   const toggleComment = useMutation({
     mutationFn: async () => {
+      console.log("Toggling comment for task:", task.id);
       const { data, error } = await supabase.rpc('toggle_comment', {
         task_id: task.id
       });
@@ -66,6 +67,7 @@ export function KanbanTask({
       return data;
     },
     onSuccess: () => {
+      console.log("Comment toggled successfully");
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setShowComments(!showComments);
     },

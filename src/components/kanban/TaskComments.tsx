@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,35 @@ const formatCommentData = (rawComment: any): TaskComment => {
 export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [channel, setChannel] = useState<any>(null);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const newChannel = supabase
+      .channel('task_comments')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'task_comments',
+          filter: `task_id=eq.${taskId}`
+        },
+        (payload) => {
+          console.log('New comment received:', payload);
+          queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+        }
+      )
+      .subscribe();
+
+    setChannel(newChannel);
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [taskId, queryClient]);
 
   const { data: comments, isLoading } = useQuery({
     queryKey: ["comments", taskId],
