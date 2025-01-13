@@ -22,6 +22,8 @@ const Auth = () => {
     console.log('Supabase client initialized');
     console.log('Current URL:', window.location.href);
     console.log('Environment:', import.meta.env.MODE);
+    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.log('Auth enabled:', !!supabase.auth);
   }, []);
 
   useEffect(() => {
@@ -39,7 +41,8 @@ const Auth = () => {
             user: session.user.email,
             lastSignIn: session.user.last_sign_in_at,
             sessionExpiry: session.expires_at,
-            provider: session.user.app_metadata.provider
+            provider: session.user.app_metadata.provider,
+            authProvider: session.user.app_metadata.provider
           });
           navigate("/");
         } else {
@@ -61,7 +64,8 @@ const Auth = () => {
       console.log("Auth state changed:", event, "Session:", session ? {
         email: session.user.email,
         provider: session.user.app_metadata.provider,
-        lastSignIn: session.user.last_sign_in_at
+        lastSignIn: session.user.last_sign_in_at,
+        authProvider: session.user.app_metadata.provider
       } : "none");
       
       if (event === "SIGNED_IN" && session) {
