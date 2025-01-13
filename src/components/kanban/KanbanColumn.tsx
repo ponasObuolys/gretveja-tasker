@@ -7,10 +7,9 @@ interface KanbanColumnProps {
   id: Tables<"tasks">["status"];
   title: string;
   tasks: Tables<"tasks">[];
-  showDeleteMode?: boolean;
 }
 
-export function KanbanColumn({ id, title, tasks, showDeleteMode }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id,
   });
@@ -26,11 +25,7 @@ export function KanbanColumn({ id, title, tasks, showDeleteMode }: KanbanColumnP
         className="p-4 space-y-4 min-h-[200px] max-h-[calc(100vh-20rem)] overflow-y-auto"
       >
         {tasks.map((task) => (
-          <KanbanTask 
-            key={task.id} 
-            task={task} 
-            showDeleteMode={showDeleteMode}
-          />
+          <KanbanTask key={task.id} task={task} />
         ))}
       </div>
     </Card>

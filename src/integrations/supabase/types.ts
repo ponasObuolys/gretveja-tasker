@@ -126,7 +126,6 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
-          moved_by: string | null
           priority: number | null
           status: Database["public"]["Enums"]["task_status"] | null
           title: string
@@ -138,7 +137,6 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
-          moved_by?: string | null
           priority?: number | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title: string
@@ -150,7 +148,6 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
-          moved_by?: string | null
           priority?: number | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title?: string
@@ -160,13 +157,6 @@ export type Database = {
           {
             foreignKeyName: "tasks_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_moved_by_fkey"
-            columns: ["moved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
