@@ -44,22 +44,22 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   const columns = [
     {
       title: "Reikia padaryti",
-      status: "REIKIA_PADARYTI",
+      id: "REIKIA_PADARYTI",
       tasks: tasks?.filter((task) => task.status === "REIKIA_PADARYTI") ?? [],
     },
     {
       title: "Vykdoma",
-      status: "VYKDOMA",
+      id: "VYKDOMA",
       tasks: tasks?.filter((task) => task.status === "VYKDOMA") ?? [],
     },
     {
       title: "Padaryta",
-      status: "PADARYTA",
+      id: "PADARYTA",
       tasks: tasks?.filter((task) => task.status === "PADARYTA") ?? [],
     },
     {
       title: "Atmesta",
-      status: "ATMESTA",
+      id: "ATMESTA",
       tasks: tasks?.filter((task) => task.status === "ATMESTA") ?? [],
     },
   ];
@@ -68,9 +68,9 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {columns.map((column) => (
         <KanbanColumn
-          key={column.status}
+          key={column.id}
+          id={column.id}
           title={column.title}
-          status={column.status as any}
           tasks={column.tasks}
         />
       ))}
