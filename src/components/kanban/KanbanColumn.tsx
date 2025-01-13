@@ -33,7 +33,7 @@ export function KanbanColumn({
       ref={setNodeRef}
       className={cn(
         "bg-[#242832] rounded-lg p-4 min-h-[200px] transition-colors",
-        isOver && "bg-[#2A2F3A] ring-2 ring-primary/50"
+        isOver && "after:content-[''] after:block after:h-[2px] after:bg-primary after:my-1"
       )}
     >
       <h3 className="font-medium mb-4">{title}</h3>
