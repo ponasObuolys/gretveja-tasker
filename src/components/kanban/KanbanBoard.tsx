@@ -10,7 +10,7 @@ interface KanbanBoardProps {
 }
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles?: {
+  profiles: {
     email: string | null;
   } | null;
 };
@@ -37,7 +37,6 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
         query = query.gte("created_at", `${today}T00:00:00Z`)
           .lte("created_at", `${today}T23:59:59Z`);
       }
-      // "all" filter doesn't need any additional conditions
 
       const { data, error } = await query.order("created_at", { ascending: false });
       
@@ -47,7 +46,7 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
       }
 
       console.log("Fetched tasks:", data);
-      return (data || []) as TaskWithProfile[];
+      return (data || []) as unknown as TaskWithProfile[];
     },
   });
 

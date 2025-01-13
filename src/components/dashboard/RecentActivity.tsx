@@ -25,7 +25,7 @@ export function RecentActivity() {
         .limit(5);
 
       if (error) throw error;
-      return (data || []) as TaskWithProfile[];
+      return (data || []) as unknown as TaskWithProfile[];
     },
   });
 
