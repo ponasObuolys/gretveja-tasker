@@ -8,10 +8,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TaskComments } from "./TaskComments";
 import { useState } from "react";
 import { MessageCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
-    profiles?: {
+    created_by_profile?: {
+      email: string | null;
+    } | null;
+    moved_by_profile?: {
       email: string | null;
     } | null;
   };
@@ -31,6 +36,25 @@ export function KanbanTask({
     id: task.id,
     disabled: isSelectionMode,
   });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isAdmin = profile?.role === "ADMIN";
 
   const style = transform ? {
     transform: CSS.Transform.toString(transform),
@@ -79,7 +103,7 @@ export function KanbanTask({
           )}
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-400">
-              {task.profiles?.email ?? "Unknown"}
+              {task.created_by_profile?.email ?? "Unknown"}
             </span>
             <Button
               variant="ghost"
@@ -94,7 +118,7 @@ export function KanbanTask({
             </Button>
           </div>
           {showComments && (
-            <TaskComments taskId={task.id} />
+            <TaskComments taskId={task.id} isAdmin={isAdmin} />
           )}
         </div>
       </div>

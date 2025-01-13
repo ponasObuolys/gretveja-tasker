@@ -15,7 +15,10 @@ interface KanbanBoardProps {
 }
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles?: {
+  created_by_profile?: {
+    email: string | null;
+  } | null;
+  moved_by_profile?: {
     email: string | null;
   } | null;
 };
@@ -37,9 +40,8 @@ export function KanbanBoard({
         .from("tasks")
         .select(`
           *,
-          profiles (
-            email
-          )
+          created_by_profile:profiles!tasks_created_by_fkey(email),
+          moved_by_profile:profiles!tasks_moved_by_fkey(email)
         `);
 
       if (filter === "priority") {
