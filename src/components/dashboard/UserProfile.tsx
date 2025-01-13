@@ -20,6 +20,41 @@ export function UserProfile() {
     },
   });
 
+  const { data: tasks } = useQuery({
+    queryKey: ["all-tasks"],
+    queryFn: async () => {
+      console.log("Fetching all tasks for statistics");
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching tasks:", error);
+        throw error;
+      }
+      console.log("Fetched tasks for statistics:", data);
+      return data;
+    },
+  });
+
+  // Calculate statistics from all historical data
+  const activeTasks = tasks?.filter(task => 
+    task.status === "REIKIA_PADARYTI" || task.status === "VYKDOMA"
+  ).length ?? 0;
+
+  const completedTasks = tasks?.filter(task => 
+    task.status === "PADARYTA"
+  ).length ?? 0;
+
+  const totalTasksWithOutcome = tasks?.filter(task => 
+    task.status === "PADARYTA" || task.status === "ATMESTA"
+  ).length ?? 0;
+
+  const successRate = totalTasksWithOutcome > 0
+    ? Math.round((completedTasks / totalTasksWithOutcome) * 100)
+    : 0;
+
   return (
     <div className="text-center mb-8">
       <Avatar className="w-20 h-20 mx-auto mb-4">
@@ -32,15 +67,15 @@ export function UserProfile() {
       
       <div className="grid grid-cols-3 gap-4 text-sm">
         <div>
-          <div className="font-medium">12</div>
+          <div className="font-medium">{activeTasks}</div>
           <div className="text-gray-400">Aktyvios</div>
         </div>
         <div>
-          <div className="font-medium">48</div>
+          <div className="font-medium">{completedTasks}</div>
           <div className="text-gray-400">Atliktos</div>
         </div>
         <div>
-          <div className="font-medium">80%</div>
+          <div className="font-medium">{successRate}%</div>
           <div className="text-gray-400">Sėkmės</div>
         </div>
       </div>
