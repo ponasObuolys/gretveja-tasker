@@ -64,6 +64,14 @@ export default function Settings() {
     setAvatarFile(file);
   };
 
+  const handleSubmit = (values: { email?: string; role?: string }) => {
+    console.log("Form values:", values);
+    const formData = new FormData();
+    formData.append('email', values.email || '');
+    formData.append('role', values.role || '');
+    updateProfile(formData);
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
@@ -96,7 +104,7 @@ export default function Settings() {
               <ProfileForm
                 profile={profile}
                 isSubmitting={isSubmitting}
-                onSubmit={updateProfile}
+                onSubmit={handleSubmit}
               />
             </>
           )}

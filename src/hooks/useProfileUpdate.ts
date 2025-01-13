@@ -77,9 +77,7 @@ export const useProfileUpdate = (profile: Profile | undefined, avatarFile: File 
   });
 
   return {
-    updateProfile: (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+    updateProfile: (formData: FormData) => {
       updateProfileMutation.mutate(formData);
     },
     isSubmitting: updateProfileMutation.isPending,
