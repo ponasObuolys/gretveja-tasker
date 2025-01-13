@@ -16,6 +16,13 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug: Check Supabase configuration
+  useEffect(() => {
+    console.log('Supabase Configuration Check:');
+    console.log('URL configured correctly:', supabase.supabaseUrl === 'https://mjerbeyhmfstcuuzjedi.supabase.co');
+    console.log('API key exists:', !!supabase.supabaseKey);
+  }, []);
+
   useEffect(() => {
     const checkExistingSession = async () => {
       setIsLoading(true);
@@ -27,7 +34,10 @@ const Auth = () => {
           return;
         }
         if (session) {
-          console.log("Existing session found, redirecting to dashboard");
+          console.log("Existing session found:", {
+            user: session.user.email,
+            lastSignIn: session.user.last_sign_in_at
+          });
           navigate("/");
         }
       } catch (error) {
@@ -47,6 +57,8 @@ const Auth = () => {
       
       if (event === "SIGNED_IN" && session) {
         try {
+          console.log("Sign in attempt for user:", session.user.email);
+          
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("role")
@@ -58,7 +70,10 @@ const Auth = () => {
             throw new Error("Nepavyko patikrinti vartotojo profilio");
           }
 
-          console.log("User profile:", profile);
+          console.log("User profile retrieved:", {
+            role: profile.role,
+            userId: session.user.id
+          });
           
           toast({
             title: "Sėkmingai prisijungta",
@@ -73,8 +88,10 @@ const Auth = () => {
           setError(error instanceof Error ? error.message : "Įvyko nenumatyta klaida");
         }
       } else if (event === "SIGNED_OUT") {
+        console.log("User signed out");
         setError(null);
       } else if (event === "PASSWORD_RECOVERY") {
+        console.log("Password recovery initiated");
         toast({
           title: "Slaptažodžio atkūrimas",
           description: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos",
@@ -87,6 +104,16 @@ const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
+
+  if (isLoading) {
+    return (
+      <AuthContainer>
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400">Kraunama...</span>
+        </div>
+      </AuthContainer>
+    );
+  }
 
   return (
     <AuthContainer>
