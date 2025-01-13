@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/auth/callback";
 import { useToast } from "./hooks/use-toast";
 
 const queryClient = new QueryClient({
@@ -59,6 +60,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route
         path="/*"
         element={
