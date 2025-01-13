@@ -159,10 +159,7 @@ const Auth = () => {
 
       <SupabaseAuth 
         supabaseClient={supabase}
-        appearance={{
-          ...authAppearance,
-          complete: true
-        }}
+        appearance={authAppearance}
         localization={{ variables: authLocalization.variables }}
         providers={[]}
         redirectTo={`${window.location.origin}/auth/callback`}
