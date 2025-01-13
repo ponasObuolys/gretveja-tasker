@@ -104,25 +104,7 @@ export function KanbanBoard({
 
     const taskId = active.id as string;
     const newStatus = over.id as Tables<"tasks">["status"];
-    const task = tasks?.find(t => t.id === taskId);
     
-    if (!task) return;
-
-    // Validate allowed transitions
-    const isValidTransition = (
-      (task.status === "REIKIA_PADARYTI" && newStatus === "VYKDOMA") ||
-      (task.status === "VYKDOMA" && (newStatus === "PADARYTA" || newStatus === "ATMESTA"))
-    );
-
-    if (!isValidTransition) {
-      toast({
-        title: "Negalimas veiksmas",
-        description: "Šis statusas negalimas šiai užduočiai",
-        variant: "destructive",
-      });
-      return;
-    }
-
     updateTaskStatus.mutate({ taskId, newStatus });
   };
 

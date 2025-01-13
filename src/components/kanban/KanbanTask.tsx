@@ -1,5 +1,4 @@
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +32,7 @@ export function KanbanTask({
   onSelect
 }: KanbanTaskProps) {
   const [showComments, setShowComments] = useState(false);
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: task.id,
     disabled: isSelectionMode,
   });
@@ -57,28 +56,14 @@ export function KanbanTask({
 
   const isAdmin = profile?.role === "ADMIN";
 
-  const style = transform ? {
-    transform: CSS.Transform.toString(transform),
-  } : undefined;
-
-  const getPriorityColor = (priority: number) => {
-    switch (priority) {
-      case 1: return "bg-red-500";
-      case 2: return "bg-orange-500";
-      case 3: return "bg-yellow-500";
-      default: return "bg-gray-500";
-    }
-  };
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-[#1A1D24] rounded-lg p-4 cursor-grab active:cursor-grabbing",
-        isSelectionMode && "cursor-pointer"
+        "bg-[#1A1D24] rounded-lg p-4",
+        isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
       )}
       onClick={() => {
         if (isSelectionMode && onSelect) {
@@ -105,16 +90,6 @@ export function KanbanTask({
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
-            {task.priority && (
-              <Badge 
-                className={cn(
-                  "text-xs font-medium",
-                  getPriorityColor(task.priority)
-                )}
-              >
-                P{task.priority}
-              </Badge>
-            )}
             {task.deadline && (
               <Badge variant="secondary" className="text-xs">
                 {format(new Date(task.deadline), "MM-dd")}
