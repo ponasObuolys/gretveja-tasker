@@ -304,6 +304,13 @@ export type Database = {
       }
     }
     Functions: {
+      save_task_link: {
+        Args: {
+          _task_id: string
+          _url: string
+        }
+        Returns: undefined
+      }
       toggle_comment: {
         Args: {
           task_id: string

@@ -29,6 +29,11 @@ interface TaskDetailsModalProps {
     moved_by_profile?: {
       email: string | null;
     } | null;
+    task_attachments?: {
+      id: string;
+      file_name: string;
+      file_url: string;
+    }[];
   } | null;
   isOpen: boolean;
   onClose: () => void;
@@ -84,6 +89,33 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (attachmentId: string) => {
+    if (!task || !isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from("task_attachments")
+        .delete()
+        .eq("id", attachmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Failas ištrintas",
+        description: "Failas sėkmingai ištrintas",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti failo",
+        variant: "destructive",
+      });
     }
   };
 
@@ -212,7 +244,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
                   </div>
                   
                   <div className="attached-files">
-                    {task.attachments?.map((attachment: any) => (
+                    {task.task_attachments?.map((attachment) => (
                       <div key={attachment.id} className="file-item">
                         <span className="text-sm truncate block">{attachment.file_name}</span>
                         {isAdmin && (
