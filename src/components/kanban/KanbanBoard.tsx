@@ -9,12 +9,25 @@ interface KanbanBoardProps {
   filter?: TaskFilter;
 }
 
+type TaskWithProfile = Tables<"tasks"> & {
+  profiles?: {
+    email: string | null;
+  } | null;
+};
+
 export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks", filter],
     queryFn: async () => {
       console.log("Fetching tasks with filter:", filter);
-      let query = supabase.from("tasks").select("*");
+      let query = supabase
+        .from("tasks")
+        .select(`
+          *,
+          profiles (
+            email
+          )
+        `);
 
       // Apply filters based on the selected tab
       if (filter === "priority") {
@@ -34,7 +47,7 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
       }
 
       console.log("Fetched tasks:", data);
-      return data;
+      return (data || []) as TaskWithProfile[];
     },
   });
 
@@ -45,7 +58,7 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   const columns: {
     title: string;
     id: Tables<"tasks">["status"];
-    tasks: Tables<"tasks">[];
+    tasks: TaskWithProfile[];
   }[] = [
     {
       title: "Reikia padaryti",
