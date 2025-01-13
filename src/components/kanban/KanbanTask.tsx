@@ -7,9 +7,10 @@ import { lt } from "date-fns/locale";
 import { useState } from "react";
 import { TaskComments } from "./TaskComments";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -18,13 +19,15 @@ interface KanbanTaskProps {
     };
   };
   isDragging?: boolean;
+  showDeleteMode?: boolean;
 }
 
-export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
+export function KanbanTask({ task, isDragging, showDeleteMode }: KanbanTaskProps) {
   const [showComments, setShowComments] = useState(false);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
   });
+  const { toast } = useToast();
 
   const { data: userProfile } = useQuery({
     queryKey: ["profile"],
@@ -43,6 +46,29 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
     },
   });
 
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", task.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Užduotis ištrinta",
+        description: "Užduotis sėkmingai ištrinta",
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti užduoties",
+        variant: "destructive",
+      });
+    }
+  };
+
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -54,12 +80,22 @@ export function KanbanTask({ task, isDragging }: KanbanTaskProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "p-4 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors",
+        "p-4 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors relative",
         isDragging && "opacity-50"
       )}
       {...listeners}
       {...attributes}
     >
+      {showDeleteMode && userProfile?.role === "ADMIN" && (
+        <Button
+          variant="destructive"
+          size="icon"
+          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+          onClick={handleDelete}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
       <div className="flex gap-2 mb-2">
         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[#E6F3FF] text-[#000000]">
           Užduotis

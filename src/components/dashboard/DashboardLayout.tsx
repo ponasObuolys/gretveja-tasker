@@ -9,12 +9,33 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { CreateTaskDialog } from "../kanban/CreateTaskDialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export type TaskFilter = "all" | "recent" | "priority";
 
 export function DashboardLayout() {
   const [activeTab, setActiveTab] = useState<TaskFilter>("all");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showDeleteMode, setShowDeleteMode] = useState(false);
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return profile;
+    },
+  });
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#1A1D24] text-white">
@@ -47,9 +68,22 @@ export function DashboardLayout() {
 
           <div className="mt-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex gap-2 items-center">
+                <CreateTaskDialog />
+                {userProfile?.role === "ADMIN" && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteMode(!showDeleteMode)}
+                    className={`truncate max-w-[200px] ${showDeleteMode ? "bg-yellow-600 hover:bg-yellow-700" : ""}`}
+                  >
+                    Pažymėti ir ištrinti
+                  </Button>
+                )}
+              </div>
               <Tabs 
                 defaultValue="all" 
-                className="w-full" 
+                className="w-full sm:w-auto" 
                 onValueChange={(value) => setActiveTab(value as TaskFilter)}
               >
                 <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex gap-2">
@@ -60,7 +94,7 @@ export function DashboardLayout() {
               </Tabs>
             </div>
             
-            <KanbanBoard filter={activeTab} />
+            <KanbanBoard filter={activeTab} showDeleteMode={showDeleteMode} />
           </div>
         </div>
       </main>

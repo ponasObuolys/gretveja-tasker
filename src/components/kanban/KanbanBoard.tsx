@@ -4,17 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { TaskFilter } from "../dashboard/DashboardLayout";
 import { format } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
+import { useState } from "react";
+import { KanbanTask } from "./KanbanTask";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
+  showDeleteMode?: boolean;
 }
 
-export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
-  const { data: tasks, isLoading } = useQuery({
+export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBoardProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const { data: tasks, isLoading, refetch } = useQuery({
     queryKey: ["tasks", filter],
     queryFn: async () => {
       console.log("Fetching tasks with filter:", filter);
-      let query = supabase.from("tasks").select("*");
+      let query = supabase.from("tasks").select("*, profiles(email)");
 
       // Apply filters based on the selected tab
       if (filter === "priority") {
@@ -37,6 +45,50 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
       return data;
     },
   });
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const taskId = active.id;
+    const newStatus = over.id as Tables<"tasks">["status"];
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({ 
+          status: newStatus,
+          moved_by: user.id
+        })
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Užduotis atnaujinta",
+        description: "Užduoties statusas sėkmingai pakeistas",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti užduoties statuso",
+        variant: "destructive",
+      });
+    }
+
+    setActiveId(null);
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -70,15 +122,26 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {columns.map((column) => (
-        <KanbanColumn
-          key={column.id}
-          id={column.id}
-          title={column.title}
-          tasks={column.tasks}
-        />
-      ))}
-    </div>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {columns.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            id={column.id}
+            title={column.title}
+            tasks={column.tasks}
+            showDeleteMode={showDeleteMode}
+          />
+        ))}
+      </div>
+      <DragOverlay>
+        {activeId && tasks ? (
+          <KanbanTask 
+            task={tasks.find((task) => task.id === activeId)!} 
+            isDragging={true}
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
