@@ -1,167 +1,79 @@
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { KanbanColumn } from "./KanbanColumn";
-import { KanbanTask } from "./KanbanTask";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
-import { useToast } from "@/hooks/use-toast";
-import { CreateTaskDialog } from "./CreateTaskDialog";
+import { TaskFilter } from "../dashboard/DashboardLayout";
+import { format } from "date-fns";
 
-type TaskStatus = Tables<"tasks">["status"];
+interface KanbanBoardProps {
+  filter?: TaskFilter;
+}
 
-const statusColumns: { id: TaskStatus; title: string }[] = [
-  { id: "REIKIA_PADARYTI", title: "Reikia padaryti" },
-  { id: "VYKDOMA", title: "Vykdoma" },
-  { id: "PADARYTA", title: "Padaryta" },
-  { id: "ATMESTA", title: "Atmesta" },
-];
-
-type TaskWithProfile = Tables<"tasks"> & {
-  profiles: Pick<Tables<"profiles">, "email"> | null;
-};
-
-export function KanbanBoard() {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const sensors = useSensors(useSensor(PointerSensor));
-
-  const { data: userProfile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-        
-      if (error) throw error;
-      return data;
-    },
-  });
-
+export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
   const { data: tasks, isLoading } = useQuery({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", filter],
     queryFn: async () => {
-      console.log("Fetching tasks with profiles information");
-      const { data, error } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          profiles (
-            email
-          )
-        `)
-        .order("priority", { ascending: false });
+      console.log("Fetching tasks with filter:", filter);
+      let query = supabase.from("tasks").select("*");
 
+      // Apply filters based on the selected tab
+      if (filter === "priority") {
+        query = query.gte("priority", 3);
+      } else if (filter === "recent") {
+        const today = format(new Date(), "yyyy-MM-dd");
+        query = query.gte("created_at", `${today}T00:00:00Z`)
+          .lte("created_at", `${today}T23:59:59Z`);
+      }
+      // "all" filter doesn't need any additional conditions
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
       if (error) {
         console.error("Error fetching tasks:", error);
         throw error;
       }
+
       console.log("Fetched tasks:", data);
-      return data as TaskWithProfile[];
+      return data;
     },
   });
-
-  const updateTaskStatus = useMutation({
-    mutationFn: async ({
-      taskId,
-      newStatus,
-    }: {
-      taskId: string;
-      newStatus: TaskStatus;
-    }) => {
-      if (userProfile?.role !== 'ADMIN') {
-        throw new Error('Insufficient permissions');
-      }
-
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: newStatus })
-        .eq("id", taskId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast({
-        title: "Užduotis atnaujinta",
-        description: "Užduoties statusas sėkmingai pakeistas",
-      });
-    },
-    onError: (error) => {
-      console.error("Error updating task:", error);
-      toast({
-        title: "Negalima keisti užduoties",
-        description: "Neturite teisių keisti užduotis. Jūs galite tik kurti naujas užduotis.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  function handleDragStart(event: DragStartEvent) {
-    if (userProfile?.role !== 'ADMIN') {
-      toast({
-        title: "Negalima keisti užduoties",
-        description: "Neturite teisių keisti užduotis. Jūs galite tik kurti naujas užduotis.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setActiveId(event.active.id as string);
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    
-    if (over && active.id !== over.id) {
-      const newStatus = over.id as TaskStatus;
-      updateTaskStatus.mutate({
-        taskId: active.id as string,
-        newStatus,
-      });
-    }
-    
-    setActiveId(null);
-  }
 
   if (isLoading) {
-    return <div className="p-8">Kraunama...</div>;
+    return <div>Loading...</div>;
   }
 
+  const columns = [
+    {
+      title: "Reikia padaryti",
+      status: "REIKIA_PADARYTI",
+      tasks: tasks?.filter((task) => task.status === "REIKIA_PADARYTI") ?? [],
+    },
+    {
+      title: "Vykdoma",
+      status: "VYKDOMA",
+      tasks: tasks?.filter((task) => task.status === "VYKDOMA") ?? [],
+    },
+    {
+      title: "Padaryta",
+      status: "PADARYTA",
+      tasks: tasks?.filter((task) => task.status === "PADARYTA") ?? [],
+    },
+    {
+      title: "Atmesta",
+      status: "ATMESTA",
+      tasks: tasks?.filter((task) => task.status === "ATMESTA") ?? [],
+    },
+  ];
+
   return (
-    <>
-      <div className="p-4">
-        <CreateTaskDialog />
-      </div>
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 min-h-[calc(100vh-10rem)]">
-          {statusColumns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              tasks={tasks?.filter((task) => task.status === column.id) || []}
-            />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeId && tasks ? (
-            <KanbanTask
-              task={tasks.find((task) => task.id === activeId)!}
-              isDragging
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {columns.map((column) => (
+        <KanbanColumn
+          key={column.status}
+          title={column.title}
+          status={column.status as any}
+          tasks={column.tasks}
+        />
+      ))}
+    </div>
   );
 }

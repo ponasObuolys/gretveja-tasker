@@ -10,8 +10,10 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
+export type TaskFilter = "all" | "recent" | "priority";
+
 export function DashboardLayout() {
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState<TaskFilter>("all");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -46,26 +48,19 @@ export function DashboardLayout() {
           <div className="mt-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <Tabs 
-                defaultValue="active" 
-                className="w-full sm:w-auto" 
-                onValueChange={setActiveTab}
+                defaultValue="all" 
+                className="w-full" 
+                onValueChange={(value) => setActiveTab(value as TaskFilter)}
               >
                 <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex gap-2">
-                  <TabsTrigger value="active" className="flex-1 sm:flex-none">Aktyvios</TabsTrigger>
+                  <TabsTrigger value="all" className="flex-1 sm:flex-none">Visos</TabsTrigger>
                   <TabsTrigger value="recent" className="flex-1 sm:flex-none">Naujausios</TabsTrigger>
                   <TabsTrigger value="priority" className="flex-1 sm:flex-none">Prioritetinės</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <Button 
-                variant="ghost" 
-                className="w-full sm:w-auto text-[#FF4B6E] hover:text-[#FF3355] hover:bg-[#242832]"
-              >
-                Rodyti visas
-              </Button>
             </div>
             
-            {activeTab === "active" && <KanbanBoard />}
-            {/* Other tabs content will be implemented later */}
+            <KanbanBoard filter={activeTab} />
           </div>
         </div>
       </main>
