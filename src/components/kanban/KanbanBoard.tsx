@@ -15,8 +15,8 @@ interface KanbanBoardProps {
 }
 
 type TaskWithProfile = Tables<"tasks"> & {
-  profiles?: {
-    email: string;
+  profiles: {
+    email: string | null;
   } | null;
 };
 
@@ -28,7 +28,12 @@ export function KanbanBoard({ filter = "all", showDeleteMode = false }: KanbanBo
     queryKey: ["tasks", filter],
     queryFn: async () => {
       console.log("Fetching tasks with filter:", filter);
-      let query = supabase.from("tasks").select("*, profiles(email)");
+      let query = supabase.from("tasks").select(`
+        *,
+        profiles (
+          email
+        )
+      `);
 
       // Apply filters based on the selected tab
       if (filter === "priority") {
