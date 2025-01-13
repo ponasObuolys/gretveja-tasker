@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
+  isSelectionMode?: boolean;
+  selectedTasks?: string[];
+  onTaskSelect?: (taskId: string) => void;
 }
 
 type TaskWithProfile = Tables<"tasks"> & {
@@ -17,7 +20,12 @@ type TaskWithProfile = Tables<"tasks"> & {
   } | null;
 };
 
-export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
+export function KanbanBoard({ 
+  filter = "all", 
+  isSelectionMode = false,
+  selectedTasks = [],
+  onTaskSelect
+}: KanbanBoardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -156,6 +164,9 @@ export function KanbanBoard({ filter = "all" }: KanbanBoardProps) {
             id={column.id}
             title={column.title}
             tasks={column.tasks}
+            isSelectionMode={isSelectionMode}
+            selectedTasks={selectedTasks}
+            onTaskSelect={onTaskSelect}
           />
         ))}
       </div>
