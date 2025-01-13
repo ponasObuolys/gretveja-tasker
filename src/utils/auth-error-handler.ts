@@ -16,6 +16,9 @@ export const getErrorMessage = (error: AuthError) => {
   console.log("Error code:", errorCode);
 
   switch (errorCode) {
+    case "validation_failed":
+      console.error("Validation error details:", error);
+      return "Neteisingi prisijungimo duomenys. Bandykite dar kartą.";
     case "invalid_credentials":
       return "Neteisingas el. paštas arba slaptažodis";
     case "email_not_confirmed":

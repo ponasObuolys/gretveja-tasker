@@ -17,9 +17,20 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    const clearStaleSession = async () => {
+      console.log("Checking for and clearing stale session");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No active session found, clearing any stale auth state");
+        await supabase.auth.signOut({ scope: 'local' });
+        localStorage.removeItem('supabase.auth.token');
+      }
+    };
+
     const checkExistingSession = async () => {
       setIsLoading(true);
       try {
+        await clearStaleSession();
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -46,7 +57,11 @@ const Auth = () => {
     checkExistingSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
+      console.log("Auth event:", event, {
+        hasSession: !!session,
+        userEmail: session?.user?.email,
+        userId: session?.user?.id
+      });
       
       if (event === "SIGNED_IN" && session?.user) {
         try {
@@ -57,10 +72,12 @@ const Auth = () => {
             .single();
 
           if (profileError) {
+            console.error("Profile fetch error:", profileError);
             throw new Error(profileError.message);
           }
 
           if (!profile) {
+            console.error("No profile found for user:", session.user.id);
             throw new Error("Profilis nerastas");
           }
 
@@ -77,11 +94,13 @@ const Auth = () => {
           setError(error instanceof Error ? error.message : "Profilio gavimo klaida");
         }
       } else if (event === "SIGNED_OUT") {
+        console.log("User signed out, clearing error state");
         setError(null);
       }
     });
 
     return () => {
+      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
