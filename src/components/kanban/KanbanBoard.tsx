@@ -66,6 +66,17 @@ export function KanbanBoard({
 
   const updateTaskStatus = useMutation({
     mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => {
+      // Check if the task is in commenting mode
+      const { data: task } = await supabase
+        .from("tasks")
+        .select("is_commenting")
+        .eq("id", taskId)
+        .single();
+
+      if (task?.is_commenting) {
+        throw new Error("Cannot move task while in commenting mode");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
@@ -91,7 +102,7 @@ export function KanbanBoard({
       console.error("Error updating task status:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko atnaujinti užduoties statuso",
+        description: error instanceof Error ? error.message : "Nepavyko atnaujinti užduoties statuso",
         variant: "destructive",
       });
     },

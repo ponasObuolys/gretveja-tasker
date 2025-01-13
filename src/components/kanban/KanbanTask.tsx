@@ -34,7 +34,7 @@ export function KanbanTask({
   const [showComments, setShowComments] = useState(false);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
-    disabled: isSelectionMode,
+    disabled: isSelectionMode || task.is_commenting,
   });
 
   const { data: profile } = useQuery({
@@ -57,22 +57,23 @@ export function KanbanTask({
   const isAdmin = profile?.role === "ADMIN";
   const isOverdue = task.deadline ? isPast(new Date(task.deadline)) : false;
 
+  const handleClick = () => {
+    if (isSelectionMode && onSelect) {
+      onSelect(task.id);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
+      {...(task.is_commenting ? {} : { ...attributes, ...listeners })}
       className={cn(
         "bg-[#1A1D24] rounded-lg p-4 transition-colors",
         isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50 border-2 border-primary",
         task.is_commenting && "ring-2 ring-primary"
       )}
-      onClick={() => {
-        if (isSelectionMode && onSelect) {
-          onSelect(task.id);
-        }
-      }}
+      onClick={handleClick}
     >
       <div className="flex items-start gap-2">
         {isSelectionMode && (

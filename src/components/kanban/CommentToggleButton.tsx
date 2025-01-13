@@ -49,15 +49,18 @@ export function CommentToggleButton({ taskId, showComments, onToggle }: CommentT
     },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleComment.mutate();
+  };
+
   return (
     <Button
       variant="ghost"
       size="sm"
       className="h-8 w-8 p-0"
-      onClick={(e) => {
-        e.stopPropagation();
-        toggleComment.mutate();
-      }}
+      onClick={handleClick}
     >
       <MessageCircle className={cn(
         "h-4 w-4",
