@@ -3,26 +3,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-
-const data = [
-  { date: "Saus 01", tasks: 4 },
-  { date: "Saus 05", tasks: 3 },
-  { date: "Saus 10", tasks: 6 },
-  { date: "Saus 15", tasks: 4 },
-  { date: "Saus 20", tasks: 8 },
-  { date: "Saus 25", tasks: 6 },
-  { date: "Saus 30", tasks: 9 },
-];
+import { format, subDays } from "date-fns";
+import { lt } from "date-fns/locale";
 
 export function TasksOverview() {
   const { data: tasks } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
+      console.log("Fetching tasks for statistics");
       const { data, error } = await supabase
         .from("tasks")
-        .select("*");
+        .select("*")
+        .order('updated_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching tasks:", error);
+        throw error;
+      }
+      console.log("Fetched tasks:", data);
       return data as Tables<"tasks">[];
     },
   });
@@ -43,6 +41,34 @@ export function TasksOverview() {
   const successRate = completedTasks + failedTasks > 0
     ? Math.round((completedTasks / (completedTasks + failedTasks)) * 100)
     : 0;
+
+  // Generate data for the last 30 days
+  const generateChartData = () => {
+    const data = [];
+    const today = new Date();
+
+    // Group tasks by date
+    const tasksByDate = tasks?.reduce((acc, task) => {
+      const date = format(new Date(task.updated_at), 'MM-dd');
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>) ?? {};
+
+    // Generate data points for the last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const date = subDays(today, i);
+      const formattedDate = format(date, 'MM-dd');
+      data.push({
+        date: formattedDate,
+        tasks: tasksByDate[formattedDate] || 0
+      });
+    }
+
+    console.log("Generated chart data:", data);
+    return data;
+  };
+
+  const chartData = generateChartData();
 
   return (
     <div className="bg-[#242832] rounded-lg p-4 lg:p-6">
@@ -77,7 +103,7 @@ export function TasksOverview() {
 
       <div className="h-[200px] sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <XAxis 
               dataKey="date" 
               stroke="#64748B" 
@@ -96,6 +122,8 @@ export function TasksOverview() {
                 borderRadius: '8px',
                 color: '#fff'
               }}
+              formatter={(value: number) => [value, 'Užduotys']}
+              labelFormatter={(label) => `Data: ${label}`}
             />
             <Line
               type="monotone"
