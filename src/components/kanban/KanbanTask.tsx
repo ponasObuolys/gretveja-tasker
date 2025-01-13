@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { TaskDetailsModal } from "./TaskDetailsModal";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {

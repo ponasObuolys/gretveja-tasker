@@ -42,6 +42,13 @@ export type Database = {
             foreignKeyName: "attachments_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "task_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
@@ -103,6 +110,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "task_details"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_comments_task_id_fkey"
             columns: ["task_id"]
@@ -178,7 +192,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      task_details: {
+        Row: {
+          attachments: Json[] | null
+          comments: Json[] | null
+          created_at: string | null
+          created_by: string | null
+          created_by_email: string | null
+          deadline: string | null
+          description: string | null
+          id: string | null
+          is_commenting: boolean | null
+          moved_by: string | null
+          moved_by_email: string | null
+          priority: number | null
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_moved_by_fkey"
+            columns: ["moved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       toggle_comment: {
