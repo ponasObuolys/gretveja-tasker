@@ -101,7 +101,7 @@ const Auth = () => {
       <SupabaseAuth 
         supabaseClient={supabase}
         appearance={authAppearance}
-        localization={authLocalization}
+        localization={{ variables: authLocalization.variables }}
         providers={[]}
       />
     </AuthContainer>

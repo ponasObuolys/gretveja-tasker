@@ -1,6 +1,6 @@
-import { Localization } from "@supabase/auth-ui-shared";
+import type { I18nVariables } from "@supabase/auth-ui-shared";
 
-export const authLocalization: Localization = {
+export const authLocalization = {
   variables: {
     sign_in: {
       email_label: "El. paštas",
@@ -33,4 +33,4 @@ export const authLocalization: Localization = {
       confirmation_text: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos"
     }
   }
-};
+} satisfies { variables: I18nVariables };
