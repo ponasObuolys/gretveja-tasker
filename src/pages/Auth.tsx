@@ -179,7 +179,6 @@ const Auth = () => {
                 loading_button_label: "Jungiamasi...",
                 social_provider_text: "Prisijungti su {{provider}}",
                 link_text: "Jau turite paskyrą? Prisijunkite",
-                forgotten_password_label: "Pamiršote slaptažodį?"
               },
               sign_up: {
                 email_label: "El. paštas",
