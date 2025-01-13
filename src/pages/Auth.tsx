@@ -18,8 +18,10 @@ const Auth = () => {
 
   // Debug: Check Supabase configuration
   useEffect(() => {
-    console.log('Supabase Configuration Check:');
+    console.log('Auth Component Debug Info:');
     console.log('Supabase client initialized');
+    console.log('Current URL:', window.location.href);
+    console.log('Environment:', import.meta.env.MODE);
   }, []);
 
   useEffect(() => {
@@ -33,11 +35,15 @@ const Auth = () => {
           return;
         }
         if (session) {
-          console.log("Existing session found:", {
+          console.log("Debug - Existing session found:", {
             user: session.user.email,
-            lastSignIn: session.user.last_sign_in_at
+            lastSignIn: session.user.last_sign_in_at,
+            sessionExpiry: session.expires_at,
+            provider: session.user.app_metadata.provider
           });
           navigate("/");
+        } else {
+          console.log("Debug - No existing session");
         }
       } catch (error) {
         console.error("Session check failed:", error);
@@ -52,7 +58,11 @@ const Auth = () => {
     checkExistingSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, "Session:", session ? "exists" : "none");
+      console.log("Auth state changed:", event, "Session:", session ? {
+        email: session.user.email,
+        provider: session.user.app_metadata.provider,
+        lastSignIn: session.user.last_sign_in_at
+      } : "none");
       
       if (event === "SIGNED_IN" && session) {
         try {
