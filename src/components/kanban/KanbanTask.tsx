@@ -2,15 +2,14 @@ import { useDraggable } from "@dnd-kit/core";
 import { format, isPast } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskComments } from "./TaskComments";
 import { useState } from "react";
-import { MessageCircle, Star } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { CommentToggleButton } from "./CommentToggleButton";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -32,8 +31,6 @@ export function KanbanTask({
   isSelected = false,
   onSelect
 }: KanbanTaskProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -54,39 +51,6 @@ export function KanbanTask({
         
       if (error) throw error;
       return data;
-    },
-  });
-
-  const toggleComment = useMutation({
-    mutationFn: async () => {
-      console.log("Toggling comment for task:", task.id);
-      const { data, error } = await supabase.rpc('toggle_comment', {
-        task_id: task.id
-      });
-      if (error) {
-        console.error("Error toggling comment:", error);
-        throw error;
-      }
-      return data;
-    },
-    onSuccess: () => {
-      console.log("Comment toggled successfully");
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setShowComments(!showComments);
-      if (!showComments) {
-        toast({
-          title: "Komentarų režimas įjungtas",
-          description: "Dabar galite pridėti komentarą",
-        });
-      }
-    },
-    onError: (error) => {
-      console.error("Error toggling comment:", error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko perjungti komentarų režimo",
-        variant: "destructive",
-      });
     },
   });
 
@@ -147,20 +111,11 @@ export function KanbanTask({
 
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>{task.created_by_profile?.email ?? "Unknown"}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleComment.mutate();
-              }}
-            >
-              <MessageCircle className={cn(
-                "h-4 w-4",
-                showComments && "text-primary"
-              )} />
-            </Button>
+            <CommentToggleButton
+              taskId={task.id}
+              showComments={showComments}
+              onToggle={setShowComments}
+            />
           </div>
 
           {showComments && (

@@ -12,25 +12,22 @@ interface TaskCommentsProps {
   isAdmin: boolean;
 }
 
-const formatCommentData = (rawComment: any): TaskComment => {
-  return {
-    id: rawComment.id,
-    task_id: rawComment.task_id,
-    user_id: rawComment.user_id,
-    comment: rawComment.comment,
-    created_at: rawComment.created_at,
-    attachments: rawComment.attachments,
-    links: rawComment.links || [],
-    user: rawComment.task_comments_profiles
-  };
-};
+const formatCommentData = (rawComment: any): TaskComment => ({
+  id: rawComment.id,
+  task_id: rawComment.task_id,
+  user_id: rawComment.user_id,
+  comment: rawComment.comment,
+  created_at: rawComment.created_at,
+  attachments: rawComment.attachments,
+  links: rawComment.links || [],
+  user: rawComment.task_comments_profiles
+});
 
 export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [channel, setChannel] = useState<any>(null);
 
-  // Set up real-time subscription
   useEffect(() => {
     const newChannel = supabase
       .channel('task_comments')
@@ -98,40 +95,13 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user found");
 
-      let uploadedFiles = [];
-      if (files.length > 0) {
-        for (const file of files) {
-          const fileExt = file.name.split(".").pop();
-          const filePath = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("comment_attachments")
-            .upload(filePath, file);
-
-          if (uploadError) {
-            console.error("Error uploading file:", uploadError);
-            continue;
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from("comment_attachments")
-            .getPublicUrl(filePath);
-
-          uploadedFiles.push({
-            filename: file.name,
-            url: publicUrl,
-            type: file.type,
-          });
-        }
-      }
-
       const { error } = await supabase
         .from("task_comments")
         .insert({
           task_id: taskId,
           user_id: user.id,
           comment,
-          attachments: uploadedFiles,
+          attachments: [],
           links,
         });
 
