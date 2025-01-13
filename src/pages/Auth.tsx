@@ -18,7 +18,7 @@ const Auth = () => {
 
   useEffect(() => {
     console.log('Auth Component Debug Info:');
-    console.log('Supabase client initialized');
+    console.log('Supabase client initialized:', !!supabase);
     console.log('Current URL:', window.location.href);
     console.log('Environment:', import.meta.env.MODE);
     console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
@@ -39,7 +39,6 @@ const Auth = () => {
             lastSignIn: session.user.last_sign_in_at,
             sessionExpiry: session.expires_at,
             provider: session.user.app_metadata.provider,
-            authProvider: session.user.app_metadata.provider
           });
           navigate("/");
         } else {
@@ -62,7 +61,6 @@ const Auth = () => {
         email: session.user.email,
         provider: session.user.app_metadata.provider,
         lastSignIn: session.user.last_sign_in_at,
-        authProvider: session.user.app_metadata.provider
       } : "none");
       
       if (event === "SIGNED_IN" && session) {
@@ -81,13 +79,13 @@ const Auth = () => {
           }
 
           console.log("User profile retrieved:", {
-            role: profile.role,
+            role: profile?.role,
             userId: session.user.id
           });
           
           toast({
             title: "Sėkmingai prisijungta",
-            description: profile.role === "ADMIN" ? 
+            description: profile?.role === "ADMIN" ? 
               "Sveiki sugrįžę, administratoriau!" : 
               "Sveiki sugrįžę!",
           });
@@ -128,7 +126,7 @@ const Auth = () => {
   return (
     <AuthContainer>
       {error && (
-        <Alert variant="destructive" className="border-red-500/50 bg-red-500/10">
+        <Alert variant="destructive" className="mb-4 border-red-500/50 bg-red-500/10">
           <AlertDescription className="text-red-400">
             {error}
           </AlertDescription>
@@ -140,6 +138,7 @@ const Auth = () => {
         appearance={authAppearance}
         localization={{ variables: authLocalization.variables }}
         providers={[]}
+        redirectTo={`${window.location.origin}/auth/callback`}
       />
     </AuthContainer>
   );
