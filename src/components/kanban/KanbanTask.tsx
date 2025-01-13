@@ -63,19 +63,28 @@ export function KanbanTask({
       const { data, error } = await supabase.rpc('toggle_comment', {
         task_id: task.id
       });
-      if (error) throw error;
+      if (error) {
+        console.error("Error toggling comment:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       console.log("Comment toggled successfully");
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setShowComments(!showComments);
+      if (!showComments) {
+        toast({
+          title: "Komentarų režimas įjungtas",
+          description: "Dabar galite pridėti komentarą",
+        });
+      }
     },
     onError: (error) => {
       console.error("Error toggling comment:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko perjungti komentarų",
+        description: "Nepavyko perjungti komentarų režimo",
         variant: "destructive",
       });
     },

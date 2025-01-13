@@ -94,53 +94,62 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No authenticated user found");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user found");
 
-    let uploadedFiles = [];
-    if (files.length > 0) {
-      for (const file of files) {
-        const fileExt = file.name.split(".").pop();
-        const filePath = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
+      let uploadedFiles = [];
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileExt = file.name.split(".").pop();
+          const filePath = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("comment_attachments")
-          .upload(filePath, file);
+          const { error: uploadError } = await supabase.storage
+            .from("comment_attachments")
+            .upload(filePath, file);
 
-        if (uploadError) {
-          console.error("Error uploading file:", uploadError);
-          continue;
+          if (uploadError) {
+            console.error("Error uploading file:", uploadError);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("comment_attachments")
+            .getPublicUrl(filePath);
+
+          uploadedFiles.push({
+            filename: file.name,
+            url: publicUrl,
+            type: file.type,
+          });
         }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("comment_attachments")
-          .getPublicUrl(filePath);
-
-        uploadedFiles.push({
-          filename: file.name,
-          url: publicUrl,
-          type: file.type,
-        });
       }
-    }
 
-    const { error } = await supabase
-      .from("task_comments")
-      .insert({
-        task_id: taskId,
-        user_id: user.id,
-        comment,
-        attachments: uploadedFiles,
-        links,
+      const { error } = await supabase
+        .from("task_comments")
+        .insert({
+          task_id: taskId,
+          user_id: user.id,
+          comment,
+          attachments: uploadedFiles,
+          links,
+        });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+      toast({
+        title: "Komentaras pridėtas",
+        description: "Komentaras sėkmingai pridėtas",
       });
-
-    if (error) throw error;
-
-    queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
-    toast({
-      title: "Komentaras pridėtas",
-      description: "Komentaras sėkmingai pridėtas",
-    });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pridėti komentaro",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
