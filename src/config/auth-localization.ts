@@ -5,17 +5,17 @@ export const authLocalization = {
     sign_in: {
       email_label: "El. paštas",
       password_label: "Slaptažodis",
-      email_input_placeholder: "Jūsų el. paštas",
+      email_input_placeholder: "jusu@paštas.lt",
       password_input_placeholder: "Jūsų slaptažodis",
       button_label: "Prisijungti",
       loading_button_label: "Jungiamasi...",
       social_provider_text: "Prisijungti su {{provider}}",
-      link_text: "Jau turite paskyrą? Prisijunkite",
+      link_text: "Jau turite paskyrą? Prisijunkite"
     },
     sign_up: {
       email_label: "El. paštas",
       password_label: "Slaptažodis",
-      email_input_placeholder: "Jūsų el. paštas",
+      email_input_placeholder: "jusu@paštas.lt",
       password_input_placeholder: "Jūsų slaptažodis",
       button_label: "Registruotis",
       loading_button_label: "Registruojama...",
@@ -24,12 +24,12 @@ export const authLocalization = {
       confirmation_text: "Patikrinkite savo el. paštą dėl patvirtinimo nuorodos"
     },
     forgotten_password: {
+      link_text: "Pamiršote slaptažodį?",
       email_label: "El. paštas",
       password_label: "Slaptažodis",
-      email_input_placeholder: "Jūsų el. paštas",
+      email_input_placeholder: "jusu@paštas.lt",
       button_label: "Siųsti atkūrimo nuorodą",
-      loading_button_label: "Siunčiama...",
-      link_text: "Pamiršote slaptažodį?",
+      loading_button_label: "Siunčiama atkūrimo nuoroda...",
       confirmation_text: "Patikrinkite savo el. paštą dėl slaptažodžio atkūrimo nuorodos"
     }
   }
