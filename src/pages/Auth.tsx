@@ -107,10 +107,6 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           redirectTo={`${window.location.origin}/auth/callback`}
-          onError={(error) => {
-            console.error("Auth error:", error);
-            setError(getErrorMessage(error));
-          }}
         />
       )}
     </AuthContainer>
