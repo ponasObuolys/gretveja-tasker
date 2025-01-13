@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { format } from "date-fns";
+import { format, isPast } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TaskComments } from "./TaskComments";
 import { useState } from "react";
 import { MessageCircle, Star } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -31,8 +32,10 @@ export function KanbanTask({
   isSelected = false,
   onSelect
 }: KanbanTaskProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false);
-  const { attributes, listeners, setNodeRef } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     disabled: isSelectionMode,
   });
@@ -54,7 +57,30 @@ export function KanbanTask({
     },
   });
 
+  const toggleComment = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('toggle_comment', {
+        task_id: task.id
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setShowComments(!showComments);
+    },
+    onError: (error) => {
+      console.error("Error toggling comment:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko perjungti komentarų",
+        variant: "destructive",
+      });
+    },
+  });
+
   const isAdmin = profile?.role === "ADMIN";
+  const isOverdue = task.deadline ? isPast(new Date(task.deadline)) : false;
 
   return (
     <div
@@ -62,8 +88,10 @@ export function KanbanTask({
       {...attributes}
       {...listeners}
       className={cn(
-        "bg-[#1A1D24] rounded-lg p-4",
-        isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+        "bg-[#1A1D24] rounded-lg p-4 transition-colors",
+        isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 border-2 border-primary",
+        task.is_commenting && "ring-2 ring-primary"
       )}
       onClick={() => {
         if (isSelectionMode && onSelect) {
@@ -91,7 +119,13 @@ export function KanbanTask({
           
           <div className="flex flex-wrap items-center gap-2">
             {task.deadline && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge 
+                variant="secondary" 
+                className={cn(
+                  "text-xs",
+                  isOverdue && "bg-[#ff4b6e] text-white"
+                )}
+              >
                 {format(new Date(task.deadline), "MM-dd")}
               </Badge>
             )}
@@ -108,10 +142,13 @@ export function KanbanTask({
               className="h-8 w-8 p-0"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowComments(!showComments);
+                toggleComment.mutate();
               }}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className={cn(
+                "h-4 w-4",
+                showComments && "text-primary"
+              )} />
             </Button>
           </div>
 
