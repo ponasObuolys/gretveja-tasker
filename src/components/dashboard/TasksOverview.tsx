@@ -4,16 +4,21 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { format, subDays } from "date-fns";
-import { lt } from "date-fns/locale";
+import { useState } from "react";
 
 export function TasksOverview() {
+  const [selectedPeriod, setSelectedPeriod] = useState<"7" | "30" | "90">("7");
+
   const { data: tasks } = useQuery({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", selectedPeriod],
     queryFn: async () => {
-      console.log("Fetching tasks for statistics");
+      console.log("Fetching tasks for statistics with period:", selectedPeriod);
+      const startDate = format(subDays(new Date(), parseInt(selectedPeriod)), 'yyyy-MM-dd');
+      
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
+        .gte('created_at', `${startDate}T00:00:00Z`)
         .order('updated_at', { ascending: false });
       
       if (error) {
@@ -42,10 +47,11 @@ export function TasksOverview() {
     ? Math.round((completedTasks / (completedTasks + failedTasks)) * 100)
     : 0;
 
-  // Generate data for the last 30 days
+  // Generate data for the selected period
   const generateChartData = () => {
     const data = [];
     const today = new Date();
+    const days = parseInt(selectedPeriod);
 
     // Group tasks by date
     const tasksByDate = tasks?.reduce((acc, task) => {
@@ -54,8 +60,8 @@ export function TasksOverview() {
       return acc;
     }, {} as Record<string, number>) ?? {};
 
-    // Generate data points for the last 30 days
-    for (let i = 29; i >= 0; i--) {
+    // Generate data points for the selected period
+    for (let i = days - 1; i >= 0; i--) {
       const date = subDays(today, i);
       const formattedDate = format(date, 'MM-dd');
       data.push({
@@ -74,7 +80,11 @@ export function TasksOverview() {
     <div className="bg-[#242832] rounded-lg p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h3 className="text-lg font-medium">Užduočių statistika</h3>
-        <Select defaultValue="30">
+        <Select 
+          defaultValue="7" 
+          value={selectedPeriod}
+          onValueChange={(value) => setSelectedPeriod(value as "7" | "30" | "90")}
+        >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Pasirinkite laikotarpį" />
           </SelectTrigger>
