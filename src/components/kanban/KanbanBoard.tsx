@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { KanbanColumn } from "./KanbanColumn";
-import { supabase } from "@/integrations/supabase/client";
 import { TaskFilter } from "../dashboard/DashboardLayout";
-import { format } from "date-fns";
 import { Tables } from "@/integrations/supabase/types";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { useToast } from "@/hooks/use-toast";
+import { KanbanLoading } from "./KanbanLoading";
+import { fetchTasks, updateTaskStatus, TaskWithProfile } from "@/utils/taskUtils";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
@@ -13,15 +13,6 @@ interface KanbanBoardProps {
   selectedTasks?: string[];
   onTaskSelect?: (taskId: string) => void;
 }
-
-type TaskWithProfile = Tables<"tasks"> & {
-  created_by_profile?: {
-    email: string | null;
-  } | null;
-  moved_by_profile?: {
-    email: string | null;
-  } | null;
-};
 
 export function KanbanBoard({ 
   filter = "all", 
@@ -34,63 +25,12 @@ export function KanbanBoard({
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks", filter],
-    queryFn: async () => {
-      console.log("Fetching tasks with filter:", filter);
-      let query = supabase
-        .from("tasks")
-        .select(`
-          *,
-          created_by_profile:profiles!tasks_created_by_fkey(email),
-          moved_by_profile:profiles!tasks_moved_by_fkey(email)
-        `);
-
-      if (filter === "priority") {
-        query = query.gte("priority", 3);
-      } else if (filter === "recent") {
-        const today = format(new Date(), "yyyy-MM-dd");
-        query = query.gte("created_at", `${today}T00:00:00Z`)
-          .lte("created_at", `${today}T23:59:59Z`);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching tasks:", error);
-        throw error;
-      }
-
-      console.log("Fetched tasks:", data);
-      return (data || []) as unknown as TaskWithProfile[];
-    },
+    queryFn: () => fetchTasks(filter),
   });
 
-  const updateTaskStatus = useMutation({
-    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => {
-      // Check if the task is in commenting mode
-      const { data: task } = await supabase
-        .from("tasks")
-        .select("is_commenting")
-        .eq("id", taskId)
-        .single();
-
-      if (task?.is_commenting) {
-        throw new Error("Cannot move task while in commenting mode");
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { error } = await supabase
-        .from("tasks")
-        .update({ 
-          status: newStatus,
-          moved_by: user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", taskId);
-
-      if (error) throw error;
-    },
+  const updateTaskStatusMutation = useMutation({
+    mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => 
+      updateTaskStatus(taskId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast({
@@ -116,11 +56,11 @@ export function KanbanBoard({
     const taskId = active.id as string;
     const newStatus = over.id as Tables<"tasks">["status"];
     
-    updateTaskStatus.mutate({ taskId, newStatus });
+    updateTaskStatusMutation.mutate({ taskId, newStatus });
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <KanbanLoading />;
   }
 
   const columns: {
