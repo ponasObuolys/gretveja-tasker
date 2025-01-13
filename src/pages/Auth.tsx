@@ -117,6 +117,12 @@ const Auth = () => {
       } else if (event === "SIGNED_OUT") {
         console.log("User signed out, clearing error state");
         setError(null);
+      } else if (event === "USER_UPDATED") {
+        const { error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("Session error after user update:", sessionError);
+          setError(getErrorMessage(sessionError));
+        }
       }
     });
 
@@ -147,10 +153,6 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           redirectTo={`${window.location.origin}/auth/callback`}
-          onError={(error) => {
-            console.error("Auth UI error:", error);
-            setError(getErrorMessage(error));
-          }}
         />
       )}
     </AuthContainer>
