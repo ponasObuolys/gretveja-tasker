@@ -9,10 +9,12 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchStore } from "@/stores/searchStore";
 
 export function DashboardHeader() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { searchQuery, setSearchQuery } = useSearchStore();
 
   const handleLogout = async () => {
     try {
@@ -46,6 +48,8 @@ export function DashboardHeader() {
       <div className="relative w-full sm:max-w-lg">
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Ieškoti užduočių..."
           className="w-full pl-10 pr-4 py-2 bg-[#242832] border border-gray-700 rounded-lg focus:outline-none focus:border-[#FF4B6E] text-gray-300"
         />

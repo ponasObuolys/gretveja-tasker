@@ -11,8 +11,8 @@ export type TaskWithProfile = Tables<"tasks"> & {
   } | null;
 };
 
-export const fetchTasks = async (filter: "all" | "priority" | "recent") => {
-  console.log("Fetching tasks with filter:", filter);
+export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQuery?: string) => {
+  console.log("Fetching tasks with filter:", filter, "and search:", searchQuery);
   let query = supabase
     .from("tasks")
     .select(`
@@ -20,6 +20,12 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent") => {
       created_by_profile:profiles!tasks_created_by_fkey(email),
       moved_by_profile:profiles!tasks_moved_by_fkey(email)
     `);
+
+  if (searchQuery) {
+    const searchLower = searchQuery.toLowerCase();
+    query = query.or(`title.ilike.%${searchLower}%,description.ilike.%${searchLower}%`)
+      .or(`created_by_profile.email.ilike.%${searchLower}%`);
+  }
 
   if (filter === "priority") {
     query = query.gte("priority", 3);

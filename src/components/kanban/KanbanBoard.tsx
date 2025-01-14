@@ -8,6 +8,7 @@ import { KanbanLoading } from "./KanbanLoading";
 import { fetchTasks, updateTaskStatus, TaskWithProfile } from "@/utils/taskUtils";
 import { isPast } from "date-fns";
 import { useEffect } from "react";
+import { useSearchStore } from "@/stores/searchStore";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
@@ -27,10 +28,11 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { searchQuery } = useSearchStore();
 
   const { data: tasks, isLoading } = useQuery({
-    queryKey: ["tasks", filter],
-    queryFn: () => fetchTasks(filter),
+    queryKey: ["tasks", filter, searchQuery],
+    queryFn: () => fetchTasks(filter, searchQuery),
   });
 
   const updateTaskStatusMutation = useMutation({
