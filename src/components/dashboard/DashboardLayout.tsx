@@ -73,7 +73,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#1A1D24] text-white">
+    <div className="flex min-h-screen bg-[#1A1D24] text-white">
       {/* Mobile Menu */}
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
@@ -91,10 +91,10 @@ export function DashboardLayout() {
         <DashboardSidebar />
       </div>
       
-      <main className="flex-1 min-h-screen w-full">
+      <div className="flex-1 flex flex-col">
         <DashboardHeader />
         
-        <div className="p-4 lg:p-6 space-y-6">
+        <div className="p-4 lg:p-6">
           <h2 className="text-xl lg:text-2xl font-semibold">Užduočių apžvalga</h2>
           
           <div className="hidden md:block">
@@ -146,7 +146,7 @@ export function DashboardLayout() {
         </div>
 
         {/* Kanban Board Container */}
-        <div className="w-full overflow-x-auto">
+        <div className="w-screen overflow-x-auto">
           <div className="min-w-[1200px] px-4">
             <KanbanBoard 
               filter={activeTab} 
@@ -162,12 +162,12 @@ export function DashboardLayout() {
             />
           </div>
         </div>
-      </main>
+      </div>
 
-      <aside className="hidden xl:block w-[240px] min-w-[240px] bg-[#242832] p-6 border-l border-gray-800 h-fit">
+      <div className="hidden xl:block w-[240px] min-w-[240px] bg-[#242832] p-6 border-l border-gray-800 h-fit">
         <UserProfile />
         <RecentActivity />
-      </aside>
+      </div>
     </div>
   );
 }
