@@ -91,7 +91,7 @@ export function DashboardLayout() {
         <DashboardSidebar />
       </div>
       
-      <main className="flex-1 min-h-screen w-full overflow-x-hidden">
+      <main className="flex-1 min-h-screen w-full">
         <DashboardHeader />
         
         <div className="p-4 lg:p-6 space-y-6">
@@ -145,9 +145,9 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        {/* New Kanban Board Container */}
-        <div className="w-full px-4 overflow-x-auto">
-          <div className="min-w-[1200px]">
+        {/* Kanban Board Container */}
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[1200px] px-4">
             <KanbanBoard 
               filter={activeTab} 
               isSelectionMode={isSelectionMode}
