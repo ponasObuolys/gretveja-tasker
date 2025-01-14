@@ -32,11 +32,11 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-[#242832] rounded-lg p-4 min-h-[200px] transition-colors",
+        "bg-[#242832] rounded-lg p-4 h-full w-full transition-colors",
         isOver && "after:content-[''] after:block after:h-[2px] after:bg-primary after:my-1"
       )}
     >
-      <h3 className="font-medium mb-4">{title} ({tasks.length})</h3>
+      <h3 className="font-medium mb-4 truncate">{title}</h3>
       <div className="space-y-3">
         {tasks.map((task) => (
           <KanbanTask 

@@ -102,12 +102,12 @@ export function KanbanBoard({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-6 gap-4 min-h-[calc(100vh-20rem)] w-full">
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}
             id={column.id}
-            title={column.title}
+            title={`${column.title} (${column.tasks.length})`}
             tasks={column.tasks}
             isSelectionMode={isSelectionMode}
             selectedTasks={selectedTasks}
