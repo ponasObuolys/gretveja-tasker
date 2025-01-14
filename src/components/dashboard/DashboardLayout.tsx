@@ -142,24 +142,27 @@ export function DashboardLayout() {
                 </TabsList>
               </Tabs>
             </div>
-            
-            <KanbanBoard 
-              filter={activeTab} 
-              isSelectionMode={isSelectionMode}
-              selectedTasks={selectedTasks}
-              onTaskSelect={(taskId) => {
-                setSelectedTasks(prev => 
-                  prev.includes(taskId)
-                    ? prev.filter(id => id !== taskId)
-                    : [...prev, taskId]
-                );
-              }}
-            />
           </div>
+        </div>
+
+        {/* Kanban Board Container */}
+        <div className="px-4 lg:px-6">
+          <KanbanBoard 
+            filter={activeTab} 
+            isSelectionMode={isSelectionMode}
+            selectedTasks={selectedTasks}
+            onTaskSelect={(taskId) => {
+              setSelectedTasks(prev => 
+                prev.includes(taskId)
+                  ? prev.filter(id => id !== taskId)
+                  : [...prev, taskId]
+              );
+            }}
+          />
         </div>
       </main>
 
-      <aside className="hidden xl:block w-80 min-w-80 bg-[#242832] p-6 border-l border-gray-800 overflow-y-auto">
+      <aside className="hidden xl:block w-80 min-w-80 bg-[#242832] p-6 border-l border-gray-800 overflow-y-auto max-h-screen">
         <UserProfile />
         <RecentActivity />
       </aside>
