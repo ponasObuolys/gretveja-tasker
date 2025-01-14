@@ -71,6 +71,16 @@ export function DashboardLayout() {
     }
   };
 
+  const handleTaskSelect = (taskId: string) => {
+    setSelectedTasks(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-[#1A1D24] text-white">
       {/* Mobile Menu */}
@@ -147,7 +157,7 @@ export function DashboardLayout() {
             filter={activeTab} 
             isSelectionMode={isSelectionMode}
             selectedTasks={selectedTasks}
-            onTaskSelect={onTaskSelect}
+            onTaskSelect={handleTaskSelect}
           />
         </div>
       </div>
