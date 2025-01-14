@@ -2,6 +2,7 @@ import { House, CheckSquare, Inbox, CheckCircle, BarChart2, Users } from "lucide
 import { useNavigate, useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { GradientText } from "@/components/ui/gradient-text";
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
@@ -18,7 +19,13 @@ export function DashboardSidebar() {
 
   return (
     <aside className="w-64 bg-[#242832] p-6 flex flex-col">
-      <div className="text-xl font-bold mb-8">GRETVĖJA TASKER</div>
+      <GradientText
+        colors={["#FF4B6E", "#FF8F6E", "#FF4B6E"]}
+        className="text-xl font-bold mb-8"
+        animationSpeed={6}
+      >
+        GRETVĖJA TASKER
+      </GradientText>
 
       <nav className="flex-1">
         <ul className="space-y-2">
