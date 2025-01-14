@@ -6,6 +6,8 @@ import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { useToast } from "@/hooks/use-toast";
 import { KanbanLoading } from "./KanbanLoading";
 import { fetchTasks, updateTaskStatus, TaskWithProfile } from "@/utils/taskUtils";
+import { isPast } from "date-fns";
+import { useEffect } from "react";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
@@ -13,6 +15,9 @@ interface KanbanBoardProps {
   selectedTasks?: string[];
   onTaskSelect?: (taskId: string) => void;
 }
+
+const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTOS"] as const;
+const DELAYED_STATUS = "VELUOJANCIOS";
 
 export function KanbanBoard({
   filter = "all",
@@ -47,6 +52,33 @@ export function KanbanBoard({
       });
     },
   });
+
+  // Check for overdue tasks and move them to VELUOJANCIOS
+  useEffect(() => {
+    if (!tasks) return;
+
+    const now = new Date();
+    
+    tasks.forEach(task => {
+      // Skip tasks in terminal statuses
+      if (TERMINAL_STATUSES.includes(task.status as typeof TERMINAL_STATUSES[number])) {
+        return;
+      }
+
+      // Check if task is overdue and not already in VELUOJANCIOS
+      if (
+        task.deadline && 
+        isPast(new Date(task.deadline)) && 
+        task.status !== DELAYED_STATUS
+      ) {
+        console.log(`Moving overdue task ${task.id} to VELUOJANCIOS`);
+        updateTaskStatusMutation.mutate({ 
+          taskId: task.id, 
+          newStatus: DELAYED_STATUS 
+        });
+      }
+    });
+  }, [tasks]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

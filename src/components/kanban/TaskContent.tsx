@@ -16,13 +16,16 @@ interface TaskContentProps {
   onSelect?: (taskId: string) => void;
 }
 
+const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTOS"];
+
 export function TaskContent({ 
   task,
   isSelectionMode,
   isSelected,
   onSelect
 }: TaskContentProps) {
-  const isOverdue = task.deadline ? isPast(new Date(task.deadline)) : false;
+  const isTerminalStatus = TERMINAL_STATUSES.includes(task.status);
+  const isOverdue = !isTerminalStatus && task.deadline ? isPast(new Date(task.deadline)) : false;
 
   return (
     <div className="flex items-start gap-2">
