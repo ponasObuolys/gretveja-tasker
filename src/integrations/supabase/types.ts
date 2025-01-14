@@ -269,8 +269,8 @@ export type Database = {
     Views: {
       task_details: {
         Row: {
-          attachments: Json[] | null
-          comments: Json[] | null
+          attachments: Json | null
+          comments: Json | null
           created_at: string | null
           created_by: string | null
           created_by_email: string | null
@@ -319,9 +319,13 @@ export type Database = {
       }
     }
     Enums: {
-
-task_status: "NAUJOS" | "VYKDOMOS" | "NUKELTOS" | "VELUOJANCIOS" | "IVYKDYTOS" | "ATMESTOS"
-
+      task_status:
+        | "NAUJOS"
+        | "VYKDOMOS"
+        | "NUKELTOS"
+        | "VELUOJANCIOS"
+        | "IVYKDYTOS"
+        | "ATMESTOS"
       user_role: "ADMIN" | "USER"
     }
     CompositeTypes: {
@@ -426,4 +430,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-

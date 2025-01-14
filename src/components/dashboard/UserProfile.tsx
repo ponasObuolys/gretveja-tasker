@@ -40,15 +40,15 @@ export function UserProfile() {
 
   // Calculate statistics from all historical data
   const activeTasks = tasks?.filter(task => 
-    task.status === "REIKIA_PADARYTI" || task.status === "VYKDOMA"
+    task.status === "NAUJOS" || task.status === "VYKDOMOS"
   ).length ?? 0;
 
   const completedTasks = tasks?.filter(task => 
-    task.status === "PADARYTA"
+    task.status === "IVYKDYTOS"
   ).length ?? 0;
 
   const totalTasksWithOutcome = tasks?.filter(task => 
-    task.status === "PADARYTA" || task.status === "ATMESTA"
+    task.status === "IVYKDYTOS" || task.status === "ATMESTOS"
   ).length ?? 0;
 
   const successRate = totalTasksWithOutcome > 0

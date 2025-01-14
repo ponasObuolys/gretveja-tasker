@@ -32,15 +32,15 @@ export function TasksOverview() {
 
   // Calculate statistics
   const activeTasks = tasks?.filter(task => 
-    task.status === "REIKIA_PADARYTI" || task.status === "VYKDOMA"
+    task.status === "NAUJOS" || task.status === "VYKDOMOS"
   ).length ?? 0;
 
   const completedTasks = tasks?.filter(task => 
-    task.status === "PADARYTA"
+    task.status === "IVYKDYTOS"
   ).length ?? 0;
 
   const failedTasks = tasks?.filter(task => 
-    task.status === "ATMESTA"
+    task.status === "ATMESTOS"
   ).length ?? 0;
 
   const successRate = completedTasks + failedTasks > 0
