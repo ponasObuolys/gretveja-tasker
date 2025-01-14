@@ -102,7 +102,7 @@ export function KanbanBoard({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-6 gap-4 min-h-[calc(100vh-20rem)] w-full">
+      <div className="grid grid-cols-6 gap-4 w-full">
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}

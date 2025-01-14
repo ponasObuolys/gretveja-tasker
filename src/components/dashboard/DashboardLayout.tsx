@@ -81,13 +81,13 @@ export function DashboardLayout() {
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[80%] sm:w-[350px] bg-[#242832] p-0 border-r border-gray-800">
+        <SheetContent side="left" className="w-[80%] sm:w-[240px] bg-[#242832] p-0 border-r border-gray-800">
           <DashboardSidebar />
         </SheetContent>
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-64 min-w-64 border-r border-gray-800">
+      <div className="hidden lg:block w-[240px] min-w-[240px] border-r border-gray-800 h-fit">
         <DashboardSidebar />
       </div>
       
@@ -142,7 +142,12 @@ export function DashboardLayout() {
                 </TabsList>
               </Tabs>
             </div>
-            
+          </div>
+        </div>
+
+        {/* New Kanban Board Container */}
+        <div className="w-full px-4 overflow-x-auto">
+          <div className="min-w-[1200px]">
             <KanbanBoard 
               filter={activeTab} 
               isSelectionMode={isSelectionMode}
@@ -159,7 +164,7 @@ export function DashboardLayout() {
         </div>
       </main>
 
-      <aside className="hidden xl:block w-80 min-w-80 bg-[#242832] p-6 border-l border-gray-800 overflow-y-auto">
+      <aside className="hidden xl:block w-[240px] min-w-[240px] bg-[#242832] p-6 border-l border-gray-800 h-fit">
         <UserProfile />
         <RecentActivity />
       </aside>
