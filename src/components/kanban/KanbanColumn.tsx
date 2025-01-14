@@ -36,7 +36,7 @@ export function KanbanColumn({
         isOver && "after:content-[''] after:block after:h-[2px] after:bg-primary after:my-1"
       )}
     >
-      <h3 className="font-medium mb-4">{title}</h3>
+      <h3 className="font-medium mb-4">{title} ({tasks.length})</h3>
       <div className="space-y-3">
         {tasks.map((task) => (
           <KanbanTask 
