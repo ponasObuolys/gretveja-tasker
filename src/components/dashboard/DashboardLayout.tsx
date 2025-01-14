@@ -73,7 +73,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#1A1D24] text-white">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#1A1D24] text-white">
       {/* Mobile Menu */}
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
@@ -81,20 +81,20 @@ export function DashboardLayout() {
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[80%] sm:w-[240px] bg-[#242832] p-0 border-r border-gray-800">
+        <SheetContent side="left" className="w-[80%] sm:w-[350px] bg-[#242832] p-0 border-r border-gray-800">
           <DashboardSidebar />
         </SheetContent>
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-[240px] min-w-[240px] border-r border-gray-800 h-fit">
+      <div className="hidden lg:block w-64 min-w-64 border-r border-gray-800">
         <DashboardSidebar />
       </div>
       
-      <div className="flex-1 flex flex-col">
+      <main className="flex-1 min-h-screen w-full overflow-x-hidden">
         <DashboardHeader />
         
-        <div className="p-4 lg:p-6">
+        <div className="p-4 lg:p-6 space-y-6">
           <h2 className="text-xl lg:text-2xl font-semibold">Užduočių apžvalga</h2>
           
           <div className="hidden md:block">
@@ -142,12 +142,7 @@ export function DashboardLayout() {
                 </TabsList>
               </Tabs>
             </div>
-          </div>
-        </div>
-
-        {/* Kanban Board Container */}
-        <div className="w-screen overflow-x-auto">
-          <div className="min-w-[1200px] px-4">
+            
             <KanbanBoard 
               filter={activeTab} 
               isSelectionMode={isSelectionMode}
@@ -162,12 +157,12 @@ export function DashboardLayout() {
             />
           </div>
         </div>
-      </div>
+      </main>
 
-      <div className="hidden xl:block w-[240px] min-w-[240px] bg-[#242832] p-6 border-l border-gray-800 h-fit">
+      <aside className="hidden xl:block w-80 min-w-80 bg-[#242832] p-6 border-l border-gray-800 overflow-y-auto">
         <UserProfile />
         <RecentActivity />
-      </div>
+      </aside>
     </div>
   );
 }
