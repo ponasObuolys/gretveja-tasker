@@ -68,7 +68,7 @@
   }
 
   .delete-button {
-    @apply absolute right-0 top-0;
+    @apply absolute right-8 top-0;
   }
 }
 
