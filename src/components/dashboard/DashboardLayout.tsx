@@ -24,7 +24,6 @@ export function DashboardLayout() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const { toast } = useToast();
 
-  // Fetch user profile to check role
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -73,7 +72,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#1A1D24] text-white">
+    <div className="flex min-h-screen bg-[#1A1D24] text-white">
       {/* Mobile Menu */}
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
@@ -87,82 +86,79 @@ export function DashboardLayout() {
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-64 min-w-64 border-r border-gray-800">
+      <div className="hidden lg:block w-64 min-w-64 border-r border-gray-800 max-h-screen">
         <DashboardSidebar />
       </div>
       
-      <main className="flex-1 min-h-screen w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen">
         <DashboardHeader />
         
-        <div className="p-4 lg:p-6 space-y-6">
-          <h2 className="text-xl lg:text-2xl font-semibold">Užduočių apžvalga</h2>
+        <div className="p-4 lg:p-6">
+          <h2 className="text-xl lg:text-2xl font-semibold mb-6">Užduočių apžvalga</h2>
           
-          <div className="hidden md:block">
+          <div className="hidden md:block mb-8">
             <TasksOverview />
           </div>
 
-          <div className="mt-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div className="flex flex-wrap gap-2 items-center">
-                <CreateTaskDialog />
-                {isAdmin && (
-                  <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-wrap gap-2 items-center">
+              <CreateTaskDialog />
+              {isAdmin && (
+                <>
+                  <Button
+                    variant={isSelectionMode ? "secondary" : "outline"}
+                    onClick={() => {
+                      setIsSelectionMode(!isSelectionMode);
+                      if (isSelectionMode) {
+                        setSelectedTasks([]);
+                      }
+                    }}
+                  >
+                    {isSelectionMode ? "Atšaukti žymėjimą" : "Pažymėti"}
+                  </Button>
+                  {isSelectionMode && (
                     <Button
-                      variant={isSelectionMode ? "secondary" : "outline"}
-                      onClick={() => {
-                        setIsSelectionMode(!isSelectionMode);
-                        if (isSelectionMode) {
-                          setSelectedTasks([]);
-                        }
-                      }}
+                      variant="destructive"
+                      onClick={handleDeleteSelected}
+                      disabled={selectedTasks.length === 0}
                     >
-                      {isSelectionMode ? "Atšaukti žymėjimą" : "Pažymėti"}
+                      Ištrinti ({selectedTasks.length})
                     </Button>
-                    {isSelectionMode && (
-                      <Button
-                        variant="destructive"
-                        onClick={handleDeleteSelected}
-                        disabled={selectedTasks.length === 0}
-                      >
-                        Ištrinti ({selectedTasks.length})
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
-              <Tabs 
-                defaultValue="all" 
-                className="w-full sm:w-auto" 
-                onValueChange={(value) => setActiveTab(value as TaskFilter)}
-              >
-                <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex gap-2">
-                  <TabsTrigger value="all" className="flex-1 sm:flex-none">Visos</TabsTrigger>
-                  <TabsTrigger value="recent" className="flex-1 sm:flex-none">Naujausios</TabsTrigger>
-                  <TabsTrigger value="priority" className="flex-1 sm:flex-none">Prioritetinės</TabsTrigger>
-                </TabsList>
-              </Tabs>
+                  )}
+                </>
+              )}
             </div>
-            
-            <KanbanBoard 
-              filter={activeTab} 
-              isSelectionMode={isSelectionMode}
-              selectedTasks={selectedTasks}
-              onTaskSelect={(taskId) => {
-                setSelectedTasks(prev => 
-                  prev.includes(taskId)
-                    ? prev.filter(id => id !== taskId)
-                    : [...prev, taskId]
-                );
-              }}
-            />
+            <Tabs 
+              defaultValue="all" 
+              className="w-full sm:w-auto" 
+              onValueChange={(value) => setActiveTab(value as TaskFilter)}
+            >
+              <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex gap-2">
+                <TabsTrigger value="all" className="flex-1 sm:flex-none">Visos</TabsTrigger>
+                <TabsTrigger value="recent" className="flex-1 sm:flex-none">Naujausios</TabsTrigger>
+                <TabsTrigger value="priority" className="flex-1 sm:flex-none">Prioritetinės</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
-      </main>
 
-      <aside className="hidden xl:block w-80 min-w-80 bg-[#242832] p-6 border-l border-gray-800 overflow-y-auto">
-        <UserProfile />
-        <RecentActivity />
-      </aside>
+        <div className="flex-1 w-full px-4">
+          <KanbanBoard 
+            filter={activeTab} 
+            isSelectionMode={isSelectionMode}
+            selectedTasks={selectedTasks}
+            onTaskSelect={onTaskSelect}
+          />
+        </div>
+      </div>
+
+      {/* Right Sidebar */}
+      <div className="hidden xl:block w-80 min-w-80 bg-[#242832] border-l border-gray-800 max-h-screen overflow-y-auto">
+        <div className="p-6">
+          <UserProfile />
+          <RecentActivity />
+        </div>
+      </div>
     </div>
   );
 }

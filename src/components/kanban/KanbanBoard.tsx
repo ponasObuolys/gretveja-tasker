@@ -14,8 +14,8 @@ interface KanbanBoardProps {
   onTaskSelect?: (taskId: string) => void;
 }
 
-export function KanbanBoard({ 
-  filter = "all", 
+export function KanbanBoard({
+  filter = "all",
   isSelectionMode = false,
   selectedTasks = [],
   onTaskSelect
@@ -29,7 +29,7 @@ export function KanbanBoard({
   });
 
   const updateTaskStatusMutation = useMutation({
-    mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => 
+    mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) =>
       updateTaskStatus(taskId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -102,7 +102,7 @@ export function KanbanBoard({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-6 gap-4 min-h-[calc(100vh-20rem)] w-full">
+      <div className="grid grid-cols-6 gap-2 min-h-[calc(100vh-14rem)] w-full overflow-x-auto">
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}
