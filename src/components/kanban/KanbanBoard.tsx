@@ -69,30 +69,40 @@ export function KanbanBoard({
     tasks: TaskWithProfile[];
   }[] = [
     {
-      title: "Reikia padaryti",
-      id: "REIKIA_PADARYTI",
-      tasks: tasks?.filter((task) => task.status === "REIKIA_PADARYTI") ?? [],
+      title: "Naujos",
+      id: "NAUJOS",
+      tasks: tasks?.filter((task) => task.status === "NAUJOS") ?? [],
     },
     {
-      title: "Vykdoma",
-      id: "VYKDOMA",
-      tasks: tasks?.filter((task) => task.status === "VYKDOMA") ?? [],
+      title: "Vykdomos",
+      id: "VYKDOMOS",
+      tasks: tasks?.filter((task) => task.status === "VYKDOMOS") ?? [],
     },
     {
-      title: "Padaryta",
-      id: "PADARYTA",
-      tasks: tasks?.filter((task) => task.status === "PADARYTA") ?? [],
+      title: "Nukeltos",
+      id: "NUKELTOS",
+      tasks: tasks?.filter((task) => task.status === "NUKELTOS") ?? [],
     },
     {
-      title: "Atmesta",
-      id: "ATMESTA",
-      tasks: tasks?.filter((task) => task.status === "ATMESTA") ?? [],
+      title: "Vėluojančios",
+      id: "VELUOJANCIOS",
+      tasks: tasks?.filter((task) => task.status === "VELUOJANCIOS") ?? [],
+    },
+    {
+      title: "Įvykdytos",
+      id: "IVYKDYTOS",
+      tasks: tasks?.filter((task) => task.status === "IVYKDYTOS") ?? [],
+    },
+    {
+      title: "Atmestos",
+      id: "ATMESTOS",
+      tasks: tasks?.filter((task) => task.status === "ATMESTOS") ?? [],
     },
   ];
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}

@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, AlertCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, ArrowRight, Calendar, Ban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
@@ -33,12 +33,16 @@ export function RecentActivity() {
 
   const getStatusIcon = (status: Tables<"tasks">["status"]) => {
     switch (status) {
-      case "PADARYTA":
+      case "IVYKDYTOS":
         return CheckCircle;
-      case "ATMESTA":
+      case "ATMESTOS":
         return AlertCircle;
-      case "VYKDOMA":
+      case "VYKDOMOS":
         return ArrowRight;
+      case "NUKELTOS":
+        return Calendar;
+      case "VELUOJANCIOS":
+        return Ban;
       default:
         return Clock;
     }
@@ -46,13 +50,17 @@ export function RecentActivity() {
 
   const getStatusMessage = (task: TaskWithProfile) => {
     switch (task.status) {
-      case "PADARYTA":
-        return `Užduotis "${task.title}" pažymėta kaip atlikta`;
-      case "ATMESTA":
+      case "IVYKDYTOS":
+        return `Užduotis "${task.title}" pažymėta kaip įvykdyta`;
+      case "ATMESTOS":
         return `Užduotis "${task.title}" atmesta`;
-      case "VYKDOMA":
+      case "VYKDOMOS":
         return `Užduotis "${task.title}" pradėta vykdyti`;
-      case "REIKIA_PADARYTI":
+      case "NUKELTOS":
+        return `Užduotis "${task.title}" nukelta`;
+      case "VELUOJANCIOS":
+        return `Užduotis "${task.title}" vėluoja`;
+      case "NAUJOS":
         return `Sukurta nauja užduotis "${task.title}"`;
       default:
         return `Užduoties "${task.title}" statusas atnaujintas`;

@@ -319,7 +319,9 @@ export type Database = {
       }
     }
     Enums: {
-      task_status: "REIKIA_PADARYTI" | "VYKDOMA" | "PADARYTA" | "ATMESTA"
+
+task_status: "NAUJOS" | "VYKDOMOS" | "NUKELTOS" | "VELUOJANCIOS" | "IVYKDYTOS" | "ATMESTOS"
+
       user_role: "ADMIN" | "USER"
     }
     CompositeTypes: {
@@ -424,3 +426,4 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+

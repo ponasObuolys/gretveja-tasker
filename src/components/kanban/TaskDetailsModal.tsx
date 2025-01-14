@@ -267,28 +267,40 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
             {isAdmin && (
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant={task.status === "REIKIA_PADARYTI" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("REIKIA_PADARYTI")}
+                  variant={task.status === "NAUJOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("NAUJOS")}
                 >
-                  Reikia padaryti
+                  Naujos
                 </Button>
                 <Button
-                  variant={task.status === "VYKDOMA" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("VYKDOMA")}
+                  variant={task.status === "VYKDOMOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("VYKDOMOS")}
                 >
-                  Vykdoma
+                  Vykdomos
                 </Button>
                 <Button
-                  variant={task.status === "PADARYTA" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("PADARYTA")}
+                  variant={task.status === "NUKELTOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("NUKELTOS")}
                 >
-                  Padaryta
+                  Nukeltos
                 </Button>
                 <Button
-                  variant={task.status === "ATMESTA" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("ATMESTA")}
+                  variant={task.status === "VELUOJANCIOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("VELUOJANCIOS")}
                 >
-                  Atmesta
+                  Vėluojančios
+                </Button>
+                <Button
+                  variant={task.status === "IVYKDYTOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("IVYKDYTOS")}
+                >
+                  Įvykdytos
+                </Button>
+                <Button
+                  variant={task.status === "ATMESTOS" ? "default" : "outline"}
+                  onClick={() => handleStatusChange("ATMESTOS")}
+                >
+                  Atmestos
                 </Button>
               </div>
             )}
