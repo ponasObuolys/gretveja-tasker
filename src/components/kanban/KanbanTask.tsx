@@ -68,7 +68,7 @@ export function KanbanTask({
       <div
         className={cn(
           "relative bg-[#1A1D24] rounded-lg p-4 transition-all duration-200 ease-in-out",
-          "cursor-pointer hover:bg-[#242832] hover:border-[#FF69B4] hover:border-2 border-solid",
+          "cursor-pointer hover:bg-[#242832] hover:border-[#FF4B6D] hover:border-2 border-solid",
           "z-10 pointer-events-auto",
           isDragging && "opacity-50 border-2 border-primary",
           task.is_commenting && "ring-2 ring-primary"
