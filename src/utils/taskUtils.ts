@@ -25,7 +25,7 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
   if (searchQuery) {
     console.log("TaskUtils: Applying search filter with query:", searchQuery);
     query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
-      .or(`profiles.email.ilike.%${searchQuery}%`, { foreignTable: 'profiles' });
+      .or(`created_by.eq.${supabase.from('profiles').select('id').ilike('email', `%${searchQuery}%`)}`);
   }
 
   if (filter === "priority") {
