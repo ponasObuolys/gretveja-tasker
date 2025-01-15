@@ -25,8 +25,11 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
   if (searchQuery) {
     console.log("TaskUtils: Applying search filter with query:", searchQuery);
     const searchLower = searchQuery.toLowerCase();
-    query = query
-      .or(`title.ilike.%${searchLower}%,description.ilike.%${searchLower}%,created_by_profile.email.ilike.%${searchLower}%`);
+    query = query.or(
+      `title.ilike.%${searchLower}%,` +
+      `description.ilike.%${searchLower}%,` +
+      `created_by_profile->>email.ilike.%${searchLower}%`
+    );
   }
 
   if (filter === "priority") {
