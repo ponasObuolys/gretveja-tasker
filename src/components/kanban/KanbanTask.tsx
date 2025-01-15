@@ -1,4 +1,4 @@
-import { useDraggable } from "@dnd-kit/core";
+import { Draggable } from "@hello-pangea/dnd";
 import { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ interface KanbanTaskProps {
       email: string | null;
     } | null;
   };
+  index: number;
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onSelect?: (taskId: string) => void;
@@ -24,15 +25,12 @@ interface KanbanTaskProps {
 
 export function KanbanTask({ 
   task,
+  index,
   isSelectionMode = false,
   isSelected = false,
   onSelect
 }: KanbanTaskProps) {
   const [showModal, setShowModal] = useState(false);
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: task.id,
-    disabled: isSelectionMode || task.is_commenting,
-  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -54,8 +52,6 @@ export function KanbanTask({
   const isAdmin = profile?.role === "ADMIN";
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isDragging) return;
-    
     if (isSelectionMode && onSelect) {
       onSelect(task.id);
     } else {
@@ -65,32 +61,41 @@ export function KanbanTask({
 
   return (
     <>
-      <div
-        className={cn(
-          "relative bg-[#1A1D24] rounded-lg p-4 transition-all duration-200 ease-in-out",
-          "cursor-pointer hover:bg-[#242832] hover:border-[#FF4B6D] hover:border-2 border-solid",
-          "z-10 pointer-events-auto",
-          isDragging && "opacity-50 border-2 border-primary",
-          task.is_commenting && "ring-2 ring-primary"
-        )}
-        onClick={handleClick}
+      <Draggable 
+        draggableId={task.id} 
+        index={index}
+        isDragDisabled={isSelectionMode || task.is_commenting}
       >
-        <TaskDragHandle
-          disabled={task.is_commenting}
-          attributes={attributes}
-          listeners={listeners}
-          setNodeRef={setNodeRef}
-        />
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            className={cn(
+              "relative bg-[#1A1D24] rounded-lg p-4 transition-all duration-200 ease-in-out",
+              "cursor-pointer hover:bg-[#242832] hover:border-[#FF4B6D] hover:border-2 border-solid",
+              "z-10 pointer-events-auto",
+              snapshot.isDragging && "ring-2 ring-primary shadow-lg shadow-primary/20",
+              task.is_commenting && "ring-2 ring-primary"
+            )}
+            onClick={handleClick}
+          >
+            <div {...provided.dragHandleProps}>
+              <TaskDragHandle
+                disabled={task.is_commenting}
+              />
+            </div>
 
-        <div className="relative z-10">
-          <TaskContent
-            task={task}
-            isSelectionMode={isSelectionMode}
-            isSelected={isSelected}
-            onSelect={onSelect}
-          />
-        </div>
-      </div>
+            <div className="relative z-10">
+              <TaskContent
+                task={task}
+                isSelectionMode={isSelectionMode}
+                isSelected={isSelected}
+                onSelect={onSelect}
+              />
+            </div>
+          </div>
+        )}
+      </Draggable>
 
       <TaskDetailsModal
         task={task}

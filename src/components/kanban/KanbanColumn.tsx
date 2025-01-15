@@ -1,7 +1,7 @@
-import { useDroppable } from "@dnd-kit/core";
 import { KanbanTask } from "./KanbanTask";
 import { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { DroppableProvided, DroppableStateSnapshot } from "@hello-pangea/dnd";
 
 interface KanbanColumnProps {
   id: Tables<"tasks">["status"];
@@ -14,6 +14,8 @@ interface KanbanColumnProps {
   isSelectionMode?: boolean;
   selectedTasks?: string[];
   onTaskSelect?: (taskId: string) => void;
+  provided: DroppableProvided;
+  isDraggingOver: boolean;
 }
 
 export function KanbanColumn({ 
@@ -22,32 +24,39 @@ export function KanbanColumn({
   tasks,
   isSelectionMode = false,
   selectedTasks = [],
-  onTaskSelect
+  onTaskSelect,
+  provided,
+  isDraggingOver
 }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-  });
-
   return (
     <div
-      ref={setNodeRef}
+      ref={provided.innerRef}
+      {...provided.droppableProps}
       className={cn(
         "bg-[#242832] rounded-lg p-4 h-full w-full transition-colors",
-        isOver && "after:content-[''] after:block after:h-[2px] after:bg-primary after:my-1"
+        isDraggingOver && "bg-[#2A2F3A]",
+        "relative"
       )}
     >
       <h3 className="font-medium mb-4 truncate">{title}</h3>
       <div className="space-y-3">
-        {tasks.map((task) => (
+        {tasks.map((task, index) => (
           <KanbanTask 
             key={task.id} 
-            task={task} 
+            task={task}
+            index={index}
             isSelectionMode={isSelectionMode}
             isSelected={selectedTasks.includes(task.id)}
             onSelect={onTaskSelect}
           />
         ))}
+        {provided.placeholder}
       </div>
+      {isDraggingOver && (
+        <div className="absolute inset-x-0 bottom-0 h-0.5">
+          <div className="h-full bg-primary animate-pulse rounded-full" />
+        </div>
+      )}
     </div>
   );
 }

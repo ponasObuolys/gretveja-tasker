@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskFilter } from "../dashboard/DashboardLayout";
 import { Tables } from "@/integrations/supabase/types";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useToast } from "@/hooks/use-toast";
 import { KanbanLoading } from "./KanbanLoading";
 import { fetchTasks, updateTaskStatus, TaskWithProfile } from "@/utils/taskUtils";
@@ -62,12 +62,10 @@ export function KanbanBoard({
     const now = new Date();
     
     tasks.forEach(task => {
-      // Skip tasks in terminal statuses
       if (TERMINAL_STATUSES.includes(task.status as typeof TERMINAL_STATUSES[number])) {
         return;
       }
 
-      // Check if task is overdue and not already in VELUOJANCIOS
       if (
         task.deadline && 
         isPast(new Date(task.deadline)) && 
@@ -82,15 +80,20 @@ export function KanbanBoard({
     });
   }, [tasks]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
-    const taskId = active.id as string;
-    const newStatus = over.id as Tables<"tasks">["status"];
-    
-    updateTaskStatusMutation.mutate({ taskId, newStatus });
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const newStatus = destination.droppableId as Tables<"tasks">["status"];
+    updateTaskStatusMutation.mutate({ taskId: draggableId, newStatus });
   };
 
   if (isLoading) {
@@ -135,20 +138,25 @@ export function KanbanBoard({
   ];
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DragDropContext onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-6 gap-2 min-h-[calc(100vh-14rem)] w-full overflow-x-auto">
         {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            id={column.id}
-            title={`${column.title} (${column.tasks.length})`}
-            tasks={column.tasks}
-            isSelectionMode={isSelectionMode}
-            selectedTasks={selectedTasks}
-            onTaskSelect={onTaskSelect}
-          />
+          <Droppable key={column.id} droppableId={column.id}>
+            {(provided, snapshot) => (
+              <KanbanColumn
+                id={column.id}
+                title={`${column.title} (${column.tasks.length})`}
+                tasks={column.tasks}
+                isSelectionMode={isSelectionMode}
+                selectedTasks={selectedTasks}
+                onTaskSelect={onTaskSelect}
+                provided={provided}
+                isDraggingOver={snapshot.isDraggingOver}
+              />
+            )}
+          </Droppable>
         ))}
       </div>
-    </DndContext>
+    </DragDropContext>
   );
 }
