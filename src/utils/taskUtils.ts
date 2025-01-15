@@ -27,8 +27,9 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
     const searchLower = searchQuery.toLowerCase();
     query = query.or(
       `title.ilike.%${searchLower}%,` +
-      `description.ilike.%${searchLower}%,` +
-      `created_by_profile->>email.ilike.%${searchLower}%`
+      `description.ilike.%${searchLower}%`
+    ).or(
+      `profiles!tasks_created_by_fkey(email.ilike.%${searchLower}%)`
     );
   }
 
