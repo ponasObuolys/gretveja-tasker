@@ -24,8 +24,21 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
 
   if (searchQuery) {
     console.log("TaskUtils: Applying search filter with query:", searchQuery);
-    query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
-      .or(`created_by.eq.${supabase.from('profiles').select('id').ilike('email', `%${searchQuery}%`)}`);
+    
+    // First get profile IDs matching the email search
+    const { data: profileIds } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('email', `%${searchQuery}%`);
+    
+    const creatorIds = profileIds?.map(profile => profile.id) || [];
+    
+    // Apply filters for title, description, and creator IDs
+    query = query.or(
+      `title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%${
+        creatorIds.length ? `,created_by.in.(${creatorIds.join(',')})` : ''
+      }`
+    );
   }
 
   if (filter === "priority") {
@@ -50,17 +63,6 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
 };
 
 export const updateTaskStatus = async (taskId: string, newStatus: Tables<"tasks">["status"]) => {
-  // Check if the task is in commenting mode
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("is_commenting")
-    .eq("id", taskId)
-    .single();
-
-  if (task?.is_commenting) {
-    throw new Error("Cannot move task while in commenting mode");
-  }
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No authenticated user");
 
