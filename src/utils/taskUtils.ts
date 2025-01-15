@@ -24,13 +24,8 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
 
   if (searchQuery) {
     console.log("TaskUtils: Applying search filter with query:", searchQuery);
-    const searchLower = searchQuery.toLowerCase();
-    query = query.or(
-      `title.ilike.%${searchLower}%,` +
-      `description.ilike.%${searchLower}%`
-    ).or(
-      `profiles!tasks_created_by_fkey(email.ilike.%${searchLower}%)`
-    );
+    query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+      .or(`profiles.email.ilike.%${searchQuery}%`, { foreignTable: 'profiles' });
   }
 
   if (filter === "priority") {
