@@ -43,13 +43,19 @@ export function DashboardHeader() {
     }
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('DashboardHeader: Search input changed:', value);
+    setSearchQuery(value);
+  };
+
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 lg:p-6 gap-4">
       <div className="relative w-full sm:max-w-lg">
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           placeholder="Ieškoti užduočių..."
           className="w-full pl-10 pr-4 py-2 bg-[#242832] border border-gray-700 rounded-lg focus:outline-none focus:border-[#FF4B6E] text-gray-300"
         />

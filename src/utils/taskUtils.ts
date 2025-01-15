@@ -12,7 +12,8 @@ export type TaskWithProfile = Tables<"tasks"> & {
 };
 
 export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQuery?: string) => {
-  console.log("Fetching tasks with filter:", filter, "and search:", searchQuery);
+  console.log("TaskUtils: Fetching tasks with filter:", filter, "and search:", searchQuery);
+  
   let query = supabase
     .from("tasks")
     .select(`
@@ -22,11 +23,10 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
     `);
 
   if (searchQuery) {
+    console.log("TaskUtils: Applying search filter with query:", searchQuery);
     const searchLower = searchQuery.toLowerCase();
     query = query
-      .or(`title.ilike.%${searchLower}%`)
-      .or(`description.ilike.%${searchLower}%`)
-      .or(`created_by_profile.email.ilike.%${searchLower}%`);
+      .or(`title.ilike.%${searchLower}%,description.ilike.%${searchLower}%,created_by_profile.email.ilike.%${searchLower}%`);
   }
 
   if (filter === "priority") {
@@ -40,11 +40,13 @@ export const fetchTasks = async (filter: "all" | "priority" | "recent", searchQu
   const { data, error } = await query.order("created_at", { ascending: false });
   
   if (error) {
-    console.error("Error fetching tasks:", error);
+    console.error("TaskUtils: Error fetching tasks:", error);
     throw error;
   }
 
-  console.log("Fetched tasks:", data);
+  console.log("TaskUtils: Fetched tasks:", data?.length, "results");
+  console.log("TaskUtils: First few results:", data?.slice(0, 3));
+  
   return (data || []) as unknown as TaskWithProfile[];
 };
 
