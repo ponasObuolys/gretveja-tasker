@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { CreateTaskDialog } from "../kanban/CreateTaskDialog";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { deleteSelectedTasks } from "@/utils/taskDeletion";
 
 interface TaskActionsProps {
   isAdmin: boolean;
@@ -23,17 +23,28 @@ export function TaskActions({
   const handleDeleteSelected = async () => {
     if (!isAdmin || selectedTasks.length === 0) return;
 
-    const result = await deleteSelectedTasks(selectedTasks, toast);
-    
-    toast({
-      title: result.success ? "Užduotys ištrintos" : "Klaida",
-      description: result.message,
-      variant: result.success ? "default" : "destructive",
-    });
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .in("id", selectedTasks);
 
-    if (result.success) {
+      if (error) throw error;
+
+      toast({
+        title: "Užduotys ištrintos",
+        description: `Sėkmingai ištrinta ${selectedTasks.length} užduočių`,
+      });
+
       setSelectedTasks([]);
       setIsSelectionMode(false);
+    } catch (error) {
+      console.error("Error deleting tasks:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti užduočių",
+        variant: "destructive",
+      });
     }
   };
 
