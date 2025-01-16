@@ -110,6 +110,28 @@ export function CreateTaskDialog() {
 
       if (error) throw error;
 
+      // Create notification for all users except the creator
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .neq('id', user.id);
+
+      if (profiles) {
+        const notifications = profiles.map(profile => ({
+          user_id: profile.id,
+          task_id: task.id,
+          action: "sukūrė užduotį",
+        }));
+
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert(notifications);
+
+        if (notificationError) {
+          console.error("Error creating notifications:", notificationError);
+        }
+      }
+
       if (selectedFiles.length > 0 && task) {
         await uploadFiles(task.id, user.id);
       }

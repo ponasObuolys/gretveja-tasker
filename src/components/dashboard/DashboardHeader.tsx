@@ -1,4 +1,4 @@
-import { Bell, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchStore } from "@/stores/searchStore";
+import { NotificationsPopover } from "@/components/ui/popover-with-notifications";
 
 export function DashboardHeader() {
   const navigate = useNavigate();
@@ -93,22 +94,7 @@ export function DashboardHeader() {
           </Tooltip>
         </TooltipProvider>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-[#242832]"
-              >
-                <Bell className="h-5 w-5 text-gray-400" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Pranešimai</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <NotificationsPopover />
 
         <Button
           variant="ghost"
