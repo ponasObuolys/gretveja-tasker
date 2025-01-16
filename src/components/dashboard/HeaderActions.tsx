@@ -63,7 +63,9 @@ export function HeaderActions() {
               variant="ghost"
               size="icon"
               onClick={handleSettingsClick}
-              className={`hover:bg-[#242832] ${isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'}`}
+              className={`hover:bg-[#242832] transition-colors ${
+                isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'
+              }`}
             >
               <Settings className="h-5 w-5" />
             </Button>
