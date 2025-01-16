@@ -24,6 +24,8 @@ export function TaskActions({
     if (!isAdmin || selectedTasks.length === 0) return;
 
     try {
+      console.log("Deleting notifications for tasks:", selectedTasks);
+      
       // First, delete associated notifications
       const { error: notificationsError } = await supabase
         .from("notifications")
@@ -32,8 +34,15 @@ export function TaskActions({
 
       if (notificationsError) {
         console.error("Error deleting notifications:", notificationsError);
-        throw notificationsError;
+        toast({
+          title: "Klaida",
+          description: "Nepavyko ištrinti pranešimų",
+          variant: "destructive",
+        });
+        return;
       }
+
+      console.log("Successfully deleted notifications, now deleting tasks");
 
       // Then delete the tasks
       const { error: tasksError } = await supabase
@@ -41,7 +50,17 @@ export function TaskActions({
         .delete()
         .in("id", selectedTasks);
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error("Error deleting tasks:", tasksError);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko ištrinti užduočių",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Successfully deleted tasks");
 
       toast({
         title: "Užduotys ištrintos",
@@ -51,10 +70,10 @@ export function TaskActions({
       setSelectedTasks([]);
       setIsSelectionMode(false);
     } catch (error) {
-      console.error("Error deleting tasks:", error);
+      console.error("Error in delete operation:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko ištrinti užduočių",
+        description: "Įvyko klaida trinant užduotis",
         variant: "destructive",
       });
     }
