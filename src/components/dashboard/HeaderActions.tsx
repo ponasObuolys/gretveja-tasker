@@ -19,7 +19,12 @@ export function HeaderActions() {
 
   const handleSettingsClick = () => {
     console.log("Settings button clicked, navigating to /settings");
-    navigate("/settings");
+    try {
+      navigate("/settings");
+      console.log("Navigation completed, new location:", location.pathname);
+    } catch (error) {
+      console.error("Navigation error:", error);
+    }
   };
 
   const handleLogout = async () => {
