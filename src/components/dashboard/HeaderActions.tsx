@@ -6,14 +6,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationsPopover } from "@/components/ui/popover-with-notifications";
 
 export function HeaderActions() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const isSettingsActive = location.pathname === "/settings";
+
+  const handleSettingsClick = () => {
+    console.log("Settings button clicked, navigating to /settings");
+    navigate("/settings");
+  };
 
   const handleLogout = async () => {
     try {
@@ -50,10 +57,10 @@ export function HeaderActions() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/settings")}
-              className="hover:bg-[#242832]"
+              onClick={handleSettingsClick}
+              className={`hover:bg-[#242832] ${isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'}`}
             >
-              <Settings className="h-5 w-5 text-gray-400" />
+              <Settings className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
