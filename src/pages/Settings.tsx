@@ -3,12 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionCheck } from "@/utils/sessionUtils";
-import { ProfileForm } from "@/components/settings/ProfileForm";
-import { AvatarUpload } from "@/components/settings/AvatarUpload";
-import { SecurityForm } from "@/components/settings/SecurityForm";
-import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
-import { useProfileUpdate } from "@/hooks/useProfileUpdate";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SettingsContent } from "@/components/settings/SettingsContent";
 
 export type Profile = {
   id: string;
@@ -24,8 +19,6 @@ export type Profile = {
 export default function Settings() {
   const navigate = useNavigate();
   const sessionCheck = useSessionCheck(navigate);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const { data: profile, error: profileError } = useQuery({
@@ -58,25 +51,6 @@ export default function Settings() {
     enabled: !isLoading,
   });
 
-  const { updateProfile, isSubmitting } = useProfileUpdate(profile, avatarFile);
-
-  const handleAvatarChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-    setAvatarFile(file);
-  };
-
-  const handleSubmit = (values: { email?: string; role?: string }) => {
-    console.log("Form values:", values);
-    const formData = new FormData();
-    formData.append('email', values.email || '');
-    formData.append('role', values.role || '');
-    updateProfile(formData);
-  };
-
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
@@ -96,46 +70,7 @@ export default function Settings() {
           ← Grįžti atgal
         </button>
 
-        <div className="bg-[#242832] rounded-lg p-8">
-          <h1 className="text-2xl font-bold mb-8">Nustatymai</h1>
-
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid grid-cols-3 gap-4">
-              <TabsTrigger value="profile">Profilis</TabsTrigger>
-              <TabsTrigger value="security">Saugumas</TabsTrigger>
-              <TabsTrigger value="notifications">Pranešimai</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="profile" className="space-y-6">
-              {profile && (
-                <>
-                  <AvatarUpload
-                    profile={profile}
-                    onAvatarChange={handleAvatarChange}
-                    avatarPreview={avatarPreview}
-                  />
-                  <ProfileForm
-                    profile={profile}
-                    isSubmitting={isSubmitting}
-                    onSubmit={handleSubmit}
-                  />
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="security">
-              <SecurityForm />
-            </TabsContent>
-
-            <TabsContent value="notifications">
-              {profile && (
-                <NotificationPreferences
-                  profile={profile}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+        {profile && <SettingsContent profile={profile} />}
       </div>
     </div>
   );
