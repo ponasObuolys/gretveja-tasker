@@ -115,7 +115,9 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           notify_new_tasks: boolean | null
           notify_overdue_tasks: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
@@ -125,7 +127,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           id: string
+          last_name?: string | null
           notify_new_tasks?: boolean | null
           notify_overdue_tasks?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -135,7 +139,9 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           notify_new_tasks?: boolean | null
           notify_overdue_tasks?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null

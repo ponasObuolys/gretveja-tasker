@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Camera } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionCheck } from "@/utils/sessionUtils";
+import { useToast } from "@/hooks/use-toast";
 
 export type Profile = {
   id: string;
   email: string | null;
   role: string | null;
   avatar_url: string | null;
+  first_name: string | null;
+  last_name: string | null;
   notify_new_tasks: boolean;
   notify_overdue_tasks: boolean;
   created_at: string;
@@ -24,8 +27,11 @@ export type Profile = {
 export default function Settings() {
   const navigate = useNavigate();
   const sessionCheck = useSessionCheck(navigate);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: profile, error: profileError, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -55,11 +61,47 @@ export default function Settings() {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const updates = {
+        first_name: formData.get('firstName')?.toString() || null,
+        last_name: formData.get('lastName')?.toString() || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast({
+        title: "Profilis atnaujintas",
+        description: "Jūsų profilio pakeitimai išsaugoti sėkmingai.",
+      });
+    },
+    onError: (error) => {
+      console.error("Profile update error:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti profilio. Bandykite dar kartą.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
+      setIsSubmitting(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
@@ -72,32 +114,38 @@ export default function Settings() {
 
       if (uploadError) throw uploadError;
 
-      console.log("Avatar uploaded successfully");
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast({
+        title: "Nuotrauka atnaujinta",
+        description: "Jūsų profilio nuotrauka sėkmingai atnaujinta.",
+      });
     } catch (error) {
       console.error("Error uploading avatar:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko įkelti nuotraukos. Bandykite dar kartą.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      console.error("Passwords don't match");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      setNewPassword("");
-      setConfirmPassword("");
-      console.log("Password updated successfully");
-    } catch (error) {
-      console.error("Error updating password:", error);
-    }
+    const formData = new FormData(e.currentTarget);
+    updateProfileMutation.mutate(formData);
   };
 
   if (isLoading) {
@@ -127,32 +175,56 @@ export default function Settings() {
             <CardHeader>
               <h2 className="text-xl font-semibold">Profilis</h2>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile?.avatar_url || ''} alt="Avatar" />
-                    <AvatarFallback>{profile?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <label className="absolute bottom-0 right-0 p-1 bg-primary rounded-full cursor-pointer">
-                    <Camera className="h-4 w-4 text-white" />
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                    />
-                  </label>
+            <CardContent>
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={profile?.avatar_url || ''} alt="Avatar" />
+                      <AvatarFallback>{profile?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <label className="absolute bottom-0 right-0 p-1 bg-primary rounded-full cursor-pointer">
+                      <Camera className="h-4 w-4 text-white" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        disabled={isSubmitting}
+                      />
+                    </label>
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Vardas</label>
+                      <Input
+                        name="firstName"
+                        defaultValue={profile?.first_name || ''}
+                        className="bg-[#1A1D24]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Pavardė</label>
+                      <Input
+                        name="lastName"
+                        defaultValue={profile?.last_name || ''}
+                        className="bg-[#1A1D24]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">El. paštas</label>
+                      <Input
+                        value={profile?.email || ''}
+                        readOnly
+                        className="bg-[#1A1D24]"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">El. paštas</label>
-                  <Input
-                    value={profile?.email || ''}
-                    readOnly
-                    className="bg-[#1A1D24]"
-                  />
-                </div>
-              </div>
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? "Saugoma..." : "Išsaugoti pakeitimus"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
 
@@ -204,6 +276,7 @@ export default function Settings() {
                         .eq('id', profile?.id);
 
                       if (error) throw error;
+                      queryClient.invalidateQueries({ queryKey: ["profile"] });
                     } catch (error) {
                       console.error("Error updating notification preference:", error);
                     }
@@ -222,6 +295,7 @@ export default function Settings() {
                         .eq('id', profile?.id);
 
                       if (error) throw error;
+                      queryClient.invalidateQueries({ queryKey: ["profile"] });
                     } catch (error) {
                       console.error("Error updating notification preference:", error);
                     }
