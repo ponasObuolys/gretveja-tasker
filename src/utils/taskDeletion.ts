@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Toast } from "@/hooks/use-toast";
+import { ToastProps } from "@/components/ui/toast";
 
 interface DeleteTasksResult {
   success: boolean;
@@ -8,7 +8,7 @@ interface DeleteTasksResult {
 
 export async function deleteSelectedTasks(
   selectedTasks: string[],
-  toast: (props: Toast) => void
+  toast: (props: ToastProps) => void
 ): Promise<DeleteTasksResult> {
   if (selectedTasks.length === 0) {
     return { success: false, message: "No tasks selected" };
