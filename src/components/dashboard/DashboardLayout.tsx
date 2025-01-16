@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
-import { UserProfile } from "./UserProfile";
-import { RecentActivity } from "./RecentActivity";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MobileSidebar } from "./MobileSidebar";
+import { RightSidebar } from "./RightSidebar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
@@ -52,17 +49,11 @@ export function DashboardLayout() {
   return (
     <NotificationProvider>
       <div className="flex min-h-screen bg-[#1A1D24] text-white">
-        {/* Mobile Menu */}
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
-            <Button variant="ghost" size="icon" className="bg-background/50 backdrop-blur-sm">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[80%] sm:w-[350px] bg-[#242832] p-0 border-r border-gray-800">
-            <DashboardSidebar />
-          </SheetContent>
-        </Sheet>
+        {/* Mobile Sidebar */}
+        <MobileSidebar 
+          isOpen={isMobileMenuOpen}
+          onOpenChange={setIsMobileMenuOpen}
+        />
 
         {/* Desktop Sidebar */}
         <div className="hidden lg:block w-64 min-w-64 border-r border-gray-800 max-h-screen">
@@ -84,13 +75,7 @@ export function DashboardLayout() {
           />
         </div>
 
-        {/* Right Sidebar */}
-        <div className="hidden xl:block w-80 min-w-80 bg-[#242832] border-l border-gray-800 max-h-screen overflow-y-auto">
-          <div className="p-6">
-            <UserProfile />
-            <RecentActivity />
-          </div>
-        </div>
+        <RightSidebar />
       </div>
     </NotificationProvider>
   );
