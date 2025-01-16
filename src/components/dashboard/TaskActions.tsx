@@ -26,7 +26,25 @@ export function TaskActions({
     try {
       console.log("Starting deletion process for tasks:", selectedTasks);
       
-      // First delete task comments
+      // First delete task links
+      const { error: linksError } = await supabase
+        .from("task_links")
+        .delete()
+        .in("task_id", selectedTasks);
+
+      if (linksError) {
+        console.error("Error deleting task links:", linksError);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko ištrinti nuorodų",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Successfully deleted task links");
+
+      // Then delete task comments
       const { error: commentsError } = await supabase
         .from("task_comments")
         .delete()
