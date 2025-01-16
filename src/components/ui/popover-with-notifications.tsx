@@ -39,17 +39,24 @@ export function NotificationsPopover() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
+      console.log("Fetching notifications for user:", user.id);
+      
       const { data, error } = await supabase
         .from("notifications")
         .select(`
           *,
           task:tasks(title),
-          profile:profiles(email, avatar_url)
+          profile:profiles!notifications_user_id_fkey(email, avatar_url)
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching notifications:", error);
+        throw error;
+      }
+      
+      console.log("Fetched notifications:", data);
       return data as Notification[];
     },
   });
@@ -59,6 +66,8 @@ export function NotificationsPopover() {
   const markAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    console.log("Marking all notifications as read for user:", user.id);
 
     const { error } = await supabase
       .from("notifications")
@@ -80,6 +89,8 @@ export function NotificationsPopover() {
 
   // Listen for new notifications
   useEffect(() => {
+    console.log("Setting up notifications listener");
+    
     const channel = supabase
       .channel('notifications')
       .on(
@@ -101,6 +112,7 @@ export function NotificationsPopover() {
       .subscribe();
 
     return () => {
+      console.log("Cleaning up notifications listener");
       supabase.removeChannel(channel);
     };
   }, [queryClient, toast]);
