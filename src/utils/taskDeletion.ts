@@ -17,7 +17,7 @@ export async function deleteSelectedTasks(
   try {
     console.log("Starting deletion process for tasks:", selectedTasks);
     
-    // Delete task links
+    // Delete task links first
     const { error: linksError } = await supabase
       .from("task_links")
       .delete()
@@ -65,7 +65,7 @@ export async function deleteSelectedTasks(
 
     console.log("Successfully deleted task attachments");
 
-    // Delete notifications
+    // Delete notifications BEFORE deleting tasks
     const { error: notificationsError } = await supabase
       .from("notifications")
       .delete()
