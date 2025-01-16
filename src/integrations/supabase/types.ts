@@ -116,6 +116,8 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          notify_new_tasks: boolean | null
+          notify_overdue_tasks: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
         }
@@ -124,6 +126,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           id: string
+          notify_new_tasks?: boolean | null
+          notify_overdue_tasks?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
         }
@@ -132,6 +136,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          notify_new_tasks?: boolean | null
+          notify_overdue_tasks?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
         }

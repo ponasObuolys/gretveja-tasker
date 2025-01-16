@@ -36,8 +36,8 @@ export const useProfileUpdate = (profile: Profile | undefined, avatarFile: File 
         console.log("New avatar URL:", avatarUrl);
       }
 
-      const email = formData.get('email');
-      const role = formData.get('role');
+      const email = formData.get('email')?.toString();
+      const role = formData.get('role')?.toString() as "ADMIN" | "USER" | null;
 
       console.log("Updating profile with:", { email, role, avatarUrl });
       const { error } = await supabase
