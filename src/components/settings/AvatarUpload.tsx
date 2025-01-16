@@ -46,6 +46,7 @@ export function AvatarUpload({
   const handleCropComplete = (croppedBlob: Blob) => {
     const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
     onAvatarChange(file);
+    setCropModalOpen(false);
   };
 
   return (
