@@ -2,6 +2,16 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface TaskProfile {
+  email: string | null;
+  avatar_url: string | null;
+}
+
+interface TaskWithCreator {
+  title: string;
+  created_by_profile?: TaskProfile;
+}
+
 interface Notification {
   id: string;
   user_id: string;
@@ -9,9 +19,7 @@ interface Notification {
   action: string;
   unread: boolean;
   created_at: string;
-  task?: {
-    title: string;
-  } | null;
+  task?: TaskWithCreator | null;
   profile?: {
     email: string | null;
     avatar_url: string | null;
@@ -42,7 +50,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         .from("notifications")
         .select(`
           *,
-          task:tasks(title),
+          task:tasks(
+            title,
+            created_by_profile:profiles!tasks_created_by_fkey(email, avatar_url)
+          ),
           profile:profiles!notifications_user_id_fkey(email, avatar_url)
         `)
         .eq("user_id", user.id)
