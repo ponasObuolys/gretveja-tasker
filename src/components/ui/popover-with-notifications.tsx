@@ -72,7 +72,7 @@ export function NotificationsPopover() {
                   <div className="flex-1 space-y-1">
                     <p className="text-sm">
                       <span className="font-medium">
-                        {notification.profile?.email}
+                        {notification.task?.created_by_profile?.email || notification.profile?.email || "Nežinomas vartotojas"}
                       </span>{" "}
                       {notification.action}{" "}
                       <span className="font-medium">
