@@ -65,6 +65,8 @@ export function useTaskForm(onSuccess: () => void) {
         throw new Error("No authenticated user found");
       }
 
+      console.log("Creating task with data:", data);
+
       const { data: task, error } = await supabase
         .from("tasks")
         .insert({
@@ -74,11 +76,23 @@ export function useTaskForm(onSuccess: () => void) {
           deadline: data.deadline || null,
           created_by: user.id,
         })
-        .select()
+        .select(`
+          *,
+          created_by_profile:profiles!tasks_created_by_fkey(
+            email
+          )
+        `)
         .single();
 
       if (error) throw error;
 
+      console.log("Task created successfully:", task);
+
+      if (selectedFiles.length > 0 && task) {
+        await uploadFiles(task.id, user.id);
+      }
+
+      // Get all profiles except the creator to notify them
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
@@ -100,10 +114,7 @@ export function useTaskForm(onSuccess: () => void) {
         }
       }
 
-      if (selectedFiles.length > 0 && task) {
-        await uploadFiles(task.id, user.id);
-      }
-
+      // Invalidate queries to trigger UI updates
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       
