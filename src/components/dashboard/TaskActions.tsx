@@ -26,7 +26,43 @@ export function TaskActions({
     try {
       console.log("Starting deletion process for tasks:", selectedTasks);
       
-      // First, delete associated notifications using a single query
+      // First delete task comments
+      const { error: commentsError } = await supabase
+        .from("task_comments")
+        .delete()
+        .in("task_id", selectedTasks);
+
+      if (commentsError) {
+        console.error("Error deleting task comments:", commentsError);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko ištrinti komentarų",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Successfully deleted task comments");
+
+      // Then delete task attachments
+      const { error: attachmentsError } = await supabase
+        .from("task_attachments")
+        .delete()
+        .in("task_id", selectedTasks);
+
+      if (attachmentsError) {
+        console.error("Error deleting task attachments:", attachmentsError);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko ištrinti priedų",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Successfully deleted task attachments");
+
+      // Then delete notifications
       const { error: notificationsError } = await supabase
         .from("notifications")
         .delete()
@@ -42,9 +78,9 @@ export function TaskActions({
         return;
       }
 
-      console.log("Successfully deleted notifications, proceeding to delete tasks");
+      console.log("Successfully deleted notifications");
 
-      // Then delete the tasks in a separate query
+      // Finally delete the tasks
       const { error: tasksError } = await supabase
         .from("tasks")
         .delete()
@@ -62,7 +98,6 @@ export function TaskActions({
 
       console.log("Successfully completed task deletion");
 
-      // Only show success message and reset state if both operations succeeded
       toast({
         title: "Užduotys ištrintos",
         description: `Sėkmingai ištrinta ${selectedTasks.length} užduočių`,
