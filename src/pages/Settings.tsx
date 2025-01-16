@@ -24,12 +24,10 @@ export type Profile = {
 export default function Settings() {
   const navigate = useNavigate();
   const sessionCheck = useSessionCheck(navigate);
-  const [isLoading, setIsLoading] = useState(true);
-  const [name, setName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const { data: profile, error: profileError } = useQuery({
+  const { data: profile, error: profileError, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       console.log("Fetching profile data");
@@ -52,11 +50,9 @@ export default function Settings() {
         throw error;
       }
       
-      setIsLoading(false);
       console.log("Profile data fetched:", data);
       return data as Profile;
     },
-    enabled: !isLoading,
   });
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
