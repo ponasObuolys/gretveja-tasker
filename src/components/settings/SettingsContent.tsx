@@ -51,6 +51,7 @@ export function SettingsContent({ profile }: SettingsContentProps) {
             profile={profile}
             onAvatarChange={handleAvatarChange}
             avatarPreview={avatarPreview}
+            isUploading={isSubmitting}
           />
           <ProfileForm
             profile={profile}

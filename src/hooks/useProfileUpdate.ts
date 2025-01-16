@@ -16,12 +16,25 @@ export const useProfileUpdate = (profile: Profile | undefined, avatarFile: File 
 
       if (avatarFile) {
         console.log("Uploading new avatar");
-        const fileExt = avatarFile.name.split('.').pop();
-        const filePath = `${user.id}/avatar.${fileExt}`;
+        
+        // Delete old avatar if exists
+        if (profile?.avatar_url) {
+          const oldFilePath = profile.avatar_url.split('/').pop();
+          if (oldFilePath) {
+            await supabase.storage
+              .from('avatars')
+              .remove([oldFilePath]);
+          }
+        }
+
+        const filePath = `${user.id}/avatar.jpg`;
         
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, avatarFile, { upsert: true });
+          .upload(filePath, avatarFile, { 
+            contentType: 'image/jpeg',
+            upsert: true 
+          });
           
         if (uploadError) {
           console.error("Avatar upload error:", uploadError);
@@ -38,14 +51,18 @@ export const useProfileUpdate = (profile: Profile | undefined, avatarFile: File 
 
       const email = formData.get('email')?.toString();
       const role = formData.get('role')?.toString() as "ADMIN" | "USER" | null;
+      const firstName = formData.get('first_name')?.toString();
+      const lastName = formData.get('last_name')?.toString();
 
-      console.log("Updating profile with:", { email, role, avatarUrl });
+      console.log("Updating profile with:", { email, role, avatarUrl, firstName, lastName });
       const { error } = await supabase
         .from('profiles')
         .update({
           email,
           role,
           avatar_url: avatarUrl,
+          first_name: firstName,
+          last_name: lastName,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
