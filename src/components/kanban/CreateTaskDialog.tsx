@@ -123,6 +123,8 @@ export function CreateTaskDialog() {
           action: "sukūrė užduotį",
         }));
 
+        console.log("Creating notifications:", notifications);
+
         const { error: notificationError } = await supabase
           .from('notifications')
           .insert(notifications);
@@ -137,10 +139,13 @@ export function CreateTaskDialog() {
       }
 
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      
       toast({
         title: "Užduotis sukurta",
         description: "Užduotis sėkmingai sukurta",
       });
+      
       form.reset();
       setSelectedFiles([]);
       setOpen(false);
