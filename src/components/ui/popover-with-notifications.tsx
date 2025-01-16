@@ -6,116 +6,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
-
-interface Notification {
-  id: string;
-  task_id: string | null;
-  action: string;
-  unread: boolean;
-  created_at: string;
-  task: {
-    title: string;
-  } | null;
-  profile: {
-    email: string | null;
-    avatar_url: string | null;
-  } | null;
-}
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export function NotificationsPopover() {
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const { data: notifications = [] } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
-
-      console.log("Fetching notifications for user:", user.id);
-      
-      const { data, error } = await supabase
-        .from("notifications")
-        .select(`
-          *,
-          task:tasks(title),
-          profile:profiles!notifications_user_id_fkey(email, avatar_url)
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching notifications:", error);
-        throw error;
-      }
-      
-      console.log("Fetched notifications:", data);
-      return data as Notification[];
-    },
-  });
-
-  const unreadCount = notifications.filter(n => n.unread).length;
-
-  const markAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    console.log("Marking all notifications as read for user:", user.id);
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ unread: false })
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Error marking notifications as read:", error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko pažymėti pranešimų kaip skaitytų",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
-  };
-
-  // Listen for new notifications
-  useEffect(() => {
-    console.log("Setting up notifications listener");
-    
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
-        (payload) => {
-          console.log('New notification:', payload);
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          toast({
-            title: "Naujas pranešimas",
-            description: "Gavote naują pranešimą",
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("Cleaning up notifications listener");
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, toast]);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -160,6 +58,7 @@ export function NotificationsPopover() {
                   className={`flex items-start gap-3 p-3 hover:bg-[#242832] ${
                     notification.unread ? "bg-[#1A1D24]" : ""
                   }`}
+                  onClick={() => notification.unread && markAsRead(notification.id)}
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
