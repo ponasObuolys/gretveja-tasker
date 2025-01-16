@@ -39,16 +39,12 @@ export const useProfileUpdate = (profile: Profile | undefined, avatarFile: File 
       const email = formData.get('email');
       const role = formData.get('role');
 
-      if (typeof email !== 'string' || !['ADMIN', 'USER'].includes(role as string)) {
-        throw new Error('Invalid form data');
-      }
-
       console.log("Updating profile with:", { email, role, avatarUrl });
       const { error } = await supabase
         .from('profiles')
         .update({
           email,
-          role: role as 'ADMIN' | 'USER',
+          role,
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })

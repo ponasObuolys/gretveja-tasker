@@ -5,13 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSessionCheck } from "@/utils/sessionUtils";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { AvatarUpload } from "@/components/settings/AvatarUpload";
+import { SecurityForm } from "@/components/settings/SecurityForm";
+import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type Profile = {
   id: string;
   email: string | null;
   role: string | null;
   avatar_url: string | null;
+  notify_new_tasks: boolean;
+  notify_overdue_tasks: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -92,22 +97,44 @@ export default function Settings() {
         </button>
 
         <div className="bg-[#242832] rounded-lg p-8">
-          <h1 className="text-2xl font-bold mb-8">Profilio nustatymai</h1>
+          <h1 className="text-2xl font-bold mb-8">Nustatymai</h1>
 
-          {profile && (
-            <>
-              <AvatarUpload
-                profile={profile}
-                onAvatarChange={handleAvatarChange}
-                avatarPreview={avatarPreview}
-              />
-              <ProfileForm
-                profile={profile}
-                isSubmitting={isSubmitting}
-                onSubmit={handleSubmit}
-              />
-            </>
-          )}
+          <Tabs defaultValue="profile" className="space-y-6">
+            <TabsList className="grid grid-cols-3 gap-4">
+              <TabsTrigger value="profile">Profilis</TabsTrigger>
+              <TabsTrigger value="security">Saugumas</TabsTrigger>
+              <TabsTrigger value="notifications">Pranešimai</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="profile" className="space-y-6">
+              {profile && (
+                <>
+                  <AvatarUpload
+                    profile={profile}
+                    onAvatarChange={handleAvatarChange}
+                    avatarPreview={avatarPreview}
+                  />
+                  <ProfileForm
+                    profile={profile}
+                    isSubmitting={isSubmitting}
+                    onSubmit={handleSubmit}
+                  />
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="security">
+              <SecurityForm />
+            </TabsContent>
+
+            <TabsContent value="notifications">
+              {profile && (
+                <NotificationPreferences
+                  profile={profile}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
