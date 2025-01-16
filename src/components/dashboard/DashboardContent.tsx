@@ -1,8 +1,10 @@
+import { Routes, Route } from "react-router-dom";
 import { TasksOverview } from "./TasksOverview";
 import { KanbanBoard } from "../kanban/KanbanBoard";
 import { TaskActions } from "./TaskActions";
 import { TaskFilters } from "./TaskFilters";
 import { TaskFilter } from "./DashboardLayout";
+import Settings from "@/pages/Settings";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -25,7 +27,7 @@ export function DashboardContent({
   setSelectedTasks,
   handleTaskSelect,
 }: DashboardContentProps) {
-  return (
+  const DashboardView = () => (
     <div className="p-4 lg:p-6">
       <h2 className="text-xl lg:text-2xl font-semibold mb-6">Užduočių apžvalga</h2>
       
@@ -53,5 +55,12 @@ export function DashboardContent({
         />
       </div>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardView />} />
+      <Route path="/settings" element={<Settings />} />
+    </Routes>
   );
 }
