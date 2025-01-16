@@ -25,11 +25,13 @@ export function SettingsContent({ profile }: SettingsContentProps) {
     setAvatarFile(file);
   };
 
-  const handleSubmit = (values: { email?: string; role?: string }) => {
+  const handleSubmit = (values: { email?: string; role?: string; firstName?: string; lastName?: string }) => {
     console.log("Form values:", values);
     const formData = new FormData();
     formData.append('email', values.email || '');
     formData.append('role', values.role || '');
+    formData.append('first_name', values.firstName || '');
+    formData.append('last_name', values.lastName || '');
     updateProfile(formData);
   };
 
