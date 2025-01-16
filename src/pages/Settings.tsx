@@ -148,6 +148,41 @@ export default function Settings() {
     updateProfileMutation.mutate(formData);
   };
 
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Klaida",
+        description: "Slaptažodžiai nesutampa",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Slaptažodis atnaujintas",
+        description: "Jūsų slaptažodis sėkmingai pakeistas",
+      });
+      
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pakeisti slaptažodžio",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
