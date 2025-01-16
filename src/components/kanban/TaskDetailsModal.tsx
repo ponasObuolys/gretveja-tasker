@@ -1,25 +1,15 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { Star, Trash2, FileText, X } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
-import { TaskComments } from "./TaskComments";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { TaskComments } from "./TaskComments";
+import { TaskActions } from "./task-details/TaskActions";
+import { TaskHeader } from "./task-details/TaskHeader";
+import { TaskAttachments } from "./task-details/TaskAttachments";
+import { TaskStatusButtons } from "./task-details/TaskStatusButtons";
+import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
 
 interface TaskDetailsModalProps {
   task: Tables<"tasks"> & {
@@ -45,7 +35,6 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const isOverdue = task?.deadline ? new Date(task.deadline) < new Date() : false;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -183,147 +172,40 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
               <DialogTitle className="text-xl">{task.title}</DialogTitle>
-              {isAdmin && (
-                <div className="modal-actions">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="delete-button"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+              <TaskActions
+                isAdmin={isAdmin}
+                onDelete={() => setIsDeleteDialogOpen(true)}
+              />
             </div>
           </DialogHeader>
 
           <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">
-                  {task.created_by_profile?.email ?? "Nežinomas"}
-                </Badge>
-                {task.deadline && (
-                  <Badge 
-                    variant="secondary"
-                    className={cn(
-                      isOverdue && "bg-[#ff4b6e] text-white"
-                    )}
-                  >
-                    {format(new Date(task.deadline), "yyyy-MM-dd")}
-                  </Badge>
-                )}
-                {task.priority >= 3 && (
-                  <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
-                )}
-              </div>
+            <TaskHeader task={task} />
+            
+            <TaskAttachments
+              isAdmin={isAdmin}
+              isUploading={isUploading}
+              attachments={task.task_attachments}
+              onFileChange={handleFileChange}
+              onDeleteFile={handleDeleteFile}
+            />
 
-              <p className="text-gray-400 whitespace-pre-wrap">
-                {task.description}
-              </p>
-
-              {isAdmin && (
-                <div className="attachment-section">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      className="relative"
-                      disabled={isUploading}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        accept="*/*"
-                      />
-                      <FileText className="h-4 w-4 mr-2" />
-                      {isUploading ? "Įkeliama..." : "Prisegti failus"}
-                    </Button>
-                  </div>
-                  
-                  <div className="attached-files">
-                    {task.task_attachments?.map((attachment) => (
-                      <div key={attachment.id} className="file-item">
-                        <span className="text-sm truncate block">{attachment.file_name}</span>
-                        {isAdmin && (
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="delete-file"
-                            onClick={() => handleDeleteFile(attachment.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {isAdmin && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={task.status === "NAUJOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("NAUJOS")}
-                >
-                  Naujos
-                </Button>
-                <Button
-                  variant={task.status === "VYKDOMOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("VYKDOMOS")}
-                >
-                  Vykdomos
-                </Button>
-                <Button
-                  variant={task.status === "NUKELTOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("NUKELTOS")}
-                >
-                  Nukeltos
-                </Button>
-                <Button
-                  variant={task.status === "VELUOJANCIOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("VELUOJANCIOS")}
-                >
-                  Vėluojančios
-                </Button>
-                <Button
-                  variant={task.status === "IVYKDYTOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("IVYKDYTOS")}
-                >
-                  Įvykdytos
-                </Button>
-                <Button
-                  variant={task.status === "ATMESTOS" ? "default" : "outline"}
-                  onClick={() => handleStatusChange("ATMESTOS")}
-                >
-                  Atmestos
-                </Button>
-              </div>
-            )}
+            <TaskStatusButtons
+              isAdmin={isAdmin}
+              currentStatus={task.status}
+              onStatusChange={handleStatusChange}
+            />
 
             <TaskComments taskId={task.id} isAdmin={isAdmin} />
           </div>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Ar tikrai norite ištrinti šią užduotį?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Šis veiksmas negrįžtamas. Užduotis bus ištrinta visam laikui.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Atšaukti</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Ištrinti</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteTaskDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }
