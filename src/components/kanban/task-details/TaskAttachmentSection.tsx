@@ -55,6 +55,7 @@ export function TaskAttachmentSection({ taskId, isAdmin }: TaskAttachmentSection
       });
 
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-links"] });
     } catch (error) {
       console.error("Error uploading files:", error);
       toast({
