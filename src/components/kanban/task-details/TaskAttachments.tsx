@@ -1,18 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, FileSpreadsheet, X } from "lucide-react";
+import { FileText, FileSpreadsheet, X, FileIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TaskAttachmentsProps {
   isAdmin: boolean;
-  attachments?: {
-    id: string;
-    file_name: string;
-    file_url: string;
-  }[];
-  onDeleteFile: (attachmentId: string) => void;
   taskId?: string;
+  onDeleteFile: (attachmentId: string) => void;
 }
 
 const getFileIcon = (fileName: string) => {
@@ -25,16 +20,31 @@ const getFileIcon = (fileName: string) => {
     case 'xlsx':
       return <FileSpreadsheet className="h-4 w-4" />;
     default:
-      return <FileText className="h-4 w-4" />;
+      return <FileIcon className="h-4 w-4" />;
   }
 };
 
 export function TaskAttachments({
   isAdmin,
-  attachments = [],
-  onDeleteFile,
   taskId,
+  onDeleteFile,
 }: TaskAttachmentsProps) {
+  const { data: attachments = [] } = useQuery({
+    queryKey: ["task-attachments", taskId],
+    queryFn: async () => {
+      if (!taskId) return [];
+      
+      const { data, error } = await supabase
+        .from("task_attachments")
+        .select("*")
+        .eq("task_id", taskId);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!taskId,
+  });
+
   const { data: links = [] } = useQuery({
     queryKey: ["task-links", taskId],
     queryFn: async () => {
@@ -44,7 +54,7 @@ export function TaskAttachments({
         .from("task_links")
         .select("*")
         .eq("task_id", taskId);
-        
+      
       if (error) throw error;
       return data;
     },
@@ -59,12 +69,15 @@ export function TaskAttachments({
         {attachments.length > 0 && (
           <div className="attached-files">
             {attachments.map((attachment) => (
-              <div key={attachment.id} className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+              <div
+                key={attachment.id}
+                className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded"
+              >
                 <a
                   href={attachment.file_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm hover:text-primary"
+                  className="flex items-center gap-2 text-sm hover:text-primary flex-1"
                 >
                   {getFileIcon(attachment.file_name)}
                   <span className="truncate">{attachment.file_name}</span>
