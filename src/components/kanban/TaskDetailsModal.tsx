@@ -71,6 +71,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
     const files = Array.from(event.target.files || []);
     if (!task || !isAdmin || files.length === 0) return;
 
@@ -119,7 +120,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
     }
   };
 
-  const handleAddLink = async () => {
+  const handleAddLink = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!task || !isAdmin || !newLink) return;
 
     try {
@@ -245,7 +247,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
                     )}
                     {isUploading ? "Įkeliama..." : "Prisegti failus"}
                   </Button>
-                  <div className="flex gap-2 flex-1">
+                  <form onSubmit={handleAddLink} className="flex gap-2 flex-1">
                     <Input
                       type="url"
                       placeholder="Įvesti nuorodą..."
@@ -253,13 +255,13 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
                       onChange={(e) => setNewLink(e.target.value)}
                     />
                     <Button
+                      type="submit"
                       variant="outline"
-                      onClick={handleAddLink}
                       disabled={!newLink}
                     >
                       <LinkIcon className="h-4 w-4" />
                     </Button>
-                  </div>
+                  </form>
                 </div>
               </div>
             )}
