@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Link as LinkIcon, X, FileSpreadsheet } from "lucide-react";
+import { FileText, FileSpreadsheet, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -83,24 +83,6 @@ export function TaskAttachments({
                     <X className="h-3 w-3" />
                   </Button>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {links.length > 0 && (
-          <div className="attached-files">
-            {links.map((link) => (
-              <div key={link.id} className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm hover:text-primary"
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="truncate">{link.url}</span>
-                </a>
               </div>
             ))}
           </div>
