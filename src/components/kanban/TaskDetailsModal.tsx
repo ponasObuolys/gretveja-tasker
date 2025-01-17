@@ -268,6 +268,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
               isAdmin={isAdmin}
               attachments={task.task_attachments}
               onDeleteFile={handleDeleteFile}
+              taskId={task.id}
             />
 
             <TaskStatusButtons
