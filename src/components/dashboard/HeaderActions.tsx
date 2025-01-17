@@ -86,16 +86,6 @@ export function HeaderActions() {
 
   return (
     <div className="flex items-center justify-end space-x-4">
-      <div className="flex items-center mr-4">
-        <Avatar className="h-8 w-8 mr-3">
-          <AvatarImage src={profile?.avatar_url || ''} />
-          <AvatarFallback>{avatarFallback}</AvatarFallback>
-        </Avatar>
-        <div className="hidden sm:flex flex-col justify-center">
-          <span className="text-sm font-medium text-white">{fullName}</span>
-          <span className="text-xs text-gray-400">{profile?.role}</span>
-        </div>
-      </div>
 
       <TooltipProvider>
         <Tooltip>
