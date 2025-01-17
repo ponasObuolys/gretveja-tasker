@@ -64,6 +64,9 @@ export function TaskAttachmentSection({ taskId, isAdmin }: TaskAttachmentSection
       });
     } finally {
       setIsUploading(false);
+      // Reset the file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     }
   };
 
@@ -107,6 +110,7 @@ export function TaskAttachmentSection({ taskId, isAdmin }: TaskAttachmentSection
           variant="outline"
           className="relative flex-1"
           disabled={isUploading}
+          onClick={(e) => e.preventDefault()}
         >
           <input
             type="file"
@@ -114,6 +118,7 @@ export function TaskAttachmentSection({ taskId, isAdmin }: TaskAttachmentSection
             onChange={handleFileChange}
             className="absolute inset-0 opacity-0 cursor-pointer"
             accept=".pdf,.doc,.docx,.xls,.xlsx"
+            onClick={(e) => e.stopPropagation()}
           />
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -133,6 +138,7 @@ export function TaskAttachmentSection({ taskId, isAdmin }: TaskAttachmentSection
             type="submit"
             variant="outline"
             disabled={!newLink}
+            onClick={(e) => e.stopPropagation()}
           >
             <LinkIcon className="h-4 w-4" />
           </Button>
