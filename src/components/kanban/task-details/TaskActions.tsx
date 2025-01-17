@@ -14,7 +14,7 @@ export function TaskActions({ isAdmin, onDelete }: TaskActionsProps) {
       variant="destructive"
       size="icon"
       onClick={onDelete}
-      className="absolute -right-2 -top-2 rounded-full shadow-lg hover:shadow-xl transition-all"
+      className="delete-button"
     >
       <Trash2 className="h-4 w-4" />
     </Button>
