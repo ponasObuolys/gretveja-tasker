@@ -1,6 +1,5 @@
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -78,15 +77,8 @@ export function HeaderActions() {
     }
   };
 
-  const fullName = profile ? 
-    `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email 
-    : '';
-
-  const avatarFallback = profile?.email?.charAt(0).toUpperCase() || 'U';
-
   return (
     <div className="flex items-center justify-end space-x-4">
-
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>

@@ -1,11 +1,10 @@
 import { House, CheckSquare, Inbox, CheckCircle, BarChart2, Users } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { GradientText } from "@/components/ui/gradient-text";
 
 export function DashboardSidebar() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
@@ -31,17 +30,19 @@ export function DashboardSidebar() {
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.path}>
-              <button
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  location.pathname === item.path
-                    ? "bg-[#FF4B6E] text-white"
-                    : "hover:bg-gray-700"
-                }`}
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  `w-full flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-[#FF4B6E] text-white"
+                      : "hover:bg-gray-700"
+                  }`
+                }
               >
                 <item.icon className="w-5 h-5 mr-3" />
                 {item.label}
-              </button>
+              </NavLink>
             </li>
           ))}
         </ul>
