@@ -1,11 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
-import { UseQueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 export const uploadTaskFile = async (
   file: File,
   taskId: string,
-  queryClient: UseQueryClient
+  queryClient: QueryClient
 ) => {
   const fileExt = file.name.split(".").pop();
   const filePath = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
@@ -36,7 +36,7 @@ export const uploadTaskFile = async (
 export const handleFileUpload = async (
   files: File[],
   taskId: string,
-  queryClient: UseQueryClient
+  queryClient: QueryClient
 ) => {
   try {
     for (const file of files) {

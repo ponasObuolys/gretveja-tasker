@@ -8,6 +8,11 @@ interface TaskAttachmentsProps {
   isAdmin: boolean;
   taskId?: string;
   onDeleteFile: (attachmentId: string) => void;
+  attachments?: {
+    id: string;
+    file_name: string;
+    file_url: string;
+  }[];
 }
 
 const getFileIcon = (fileName: string) => {
@@ -28,8 +33,9 @@ export function TaskAttachments({
   isAdmin,
   taskId,
   onDeleteFile,
+  attachments = [],
 }: TaskAttachmentsProps) {
-  const { data: attachments = [] } = useQuery({
+  const { data: fetchedAttachments = [] } = useQuery({
     queryKey: ["task-attachments"],
     queryFn: async () => {
       if (!taskId) return [];
@@ -43,16 +49,18 @@ export function TaskAttachments({
       if (error) throw error;
       return data;
     },
-    enabled: !!taskId,
+    enabled: !!taskId && attachments.length === 0,
   });
 
-  if (attachments.length === 0) return null;
+  const displayAttachments = attachments.length > 0 ? attachments : fetchedAttachments;
+
+  if (displayAttachments.length === 0) return null;
 
   return (
     <ScrollArea className="h-[200px] w-full rounded-md border p-4" onClick={e => e.stopPropagation()}>
       <div className="space-y-4">
         <div className="attached-files">
-          {attachments.map((attachment) => (
+          {displayAttachments.map((attachment) => (
             <div
               key={attachment.id}
               className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded"
