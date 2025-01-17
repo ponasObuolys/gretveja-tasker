@@ -77,12 +77,46 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
     if (!task || !isAdmin) return;
 
     try {
-      const { error } = await supabase
+      console.log("Starting task deletion process");
+
+      // First, delete all task attachments
+      const { error: attachmentsError } = await supabase
+        .from("task_attachments")
+        .delete()
+        .eq("task_id", task.id);
+
+      if (attachmentsError) {
+        console.error("Error deleting task attachments:", attachmentsError);
+        throw attachmentsError;
+      }
+
+      console.log("Task attachments deleted successfully");
+
+      // Then delete all task comments
+      const { error: commentsError } = await supabase
+        .from("task_comments")
+        .delete()
+        .eq("task_id", task.id);
+
+      if (commentsError) {
+        console.error("Error deleting task comments:", commentsError);
+        throw commentsError;
+      }
+
+      console.log("Task comments deleted successfully");
+
+      // Finally delete the task
+      const { error: taskError } = await supabase
         .from("tasks")
         .delete()
         .eq("id", task.id);
 
-      if (error) throw error;
+      if (taskError) {
+        console.error("Error deleting task:", taskError);
+        throw taskError;
+      }
+
+      console.log("Task deleted successfully");
 
       toast({
         title: "Užduotis ištrinta",
