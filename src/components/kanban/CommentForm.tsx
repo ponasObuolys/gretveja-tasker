@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUploadSection } from "./comment-form/FileUploadSection";
-import { LinkInputSection } from "./comment-form/LinkInputSection";
 import { SubmitButton } from "./comment-form/SubmitButton";
 
 interface CommentFormProps {
@@ -11,9 +9,6 @@ interface CommentFormProps {
 
 export function CommentForm({ isAdmin, onSubmit }: CommentFormProps) {
   const [comment, setComment] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [link, setLink] = useState("");
-  const [links, setLinks] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleSubmit = async () => {
@@ -21,10 +16,8 @@ export function CommentForm({ isAdmin, onSubmit }: CommentFormProps) {
     
     setIsUploading(true);
     try {
-      await onSubmit(comment, files, links);
+      await onSubmit(comment, [], []);
       setComment("");
-      setFiles([]);
-      setLinks([]);
     } finally {
       setIsUploading(false);
     }
@@ -39,25 +32,10 @@ export function CommentForm({ isAdmin, onSubmit }: CommentFormProps) {
         value={comment}
         onChange={(e) => setComment(e.target.value)}
       />
-      
-      <div className="flex flex-col gap-4">
-        <div className="flex gap-2">
-          <FileUploadSection
-            files={files}
-            onFilesChange={setFiles}
-          />
-          <LinkInputSection
-            link={link}
-            links={links}
-            onLinkChange={setLink}
-            onLinksChange={setLinks}
-          />
-        </div>
-      </div>
-
       <SubmitButton
         isUploading={isUploading}
         disabled={!comment}
+        onClick={handleSubmit}
       />
     </div>
   );
