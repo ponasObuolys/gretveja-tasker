@@ -3,7 +3,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { TaskComments } from "./TaskComments";
 import { TaskHeader } from "./task-details/TaskHeader";
 import { TaskAttachments } from "./task-details/TaskAttachments";
@@ -35,6 +35,13 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleDialogClose = useCallback((open: boolean) => {
+    if (!isUploading) {
+      onClose();
+    }
+  }, [onClose, isUploading]);
 
   const handleStatusChange = async (newStatus: Tables<"tasks">["status"]) => {
     if (!task || !isAdmin) return;
@@ -55,7 +62,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
         description: "Užduoties būsena sėkmingai atnaujinta",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
     } catch (error) {
       console.error("Error updating task status:", error);
       toast({
@@ -82,7 +89,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
         description: "Užduotis sėkmingai ištrinta",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
       onClose();
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -110,7 +117,10 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
         description: "Failas sėkmingai ištrintas",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+        queryClient.invalidateQueries({ queryKey: ["task-attachments"] })
+      ]);
     } catch (error) {
       console.error("Error deleting file:", error);
       toast({
@@ -125,7 +135,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <Dialog open={isOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
@@ -137,13 +147,15 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
             </div>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
             <TaskHeader task={task} />
 
             {isAdmin && (
               <TaskAttachmentSection
                 taskId={task.id}
                 isAdmin={isAdmin}
+                onUploadStart={() => setIsUploading(true)}
+                onUploadEnd={() => setIsUploading(false)}
               />
             )}
 
