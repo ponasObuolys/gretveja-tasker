@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Link as LinkIcon, X, FileSpreadsheet, FilePdf } from "lucide-react";
+import { FileText, Link as LinkIcon, X, FileSpreadsheet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,7 +20,7 @@ const getFileIcon = (fileName: string) => {
   
   switch (extension) {
     case 'pdf':
-      return <FilePdf className="h-4 w-4" />;
+      return <FileText className="h-4 w-4" />;
     case 'xls':
     case 'xlsx':
       return <FileSpreadsheet className="h-4 w-4" />;
@@ -59,7 +59,7 @@ export function TaskAttachments({
         {attachments.length > 0 && (
           <div className="attached-files">
             {attachments.map((attachment) => (
-              <div key={attachment.id} className="file-item group">
+              <div key={attachment.id} className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded">
                 <a
                   href={attachment.file_url}
                   target="_blank"
@@ -73,7 +73,7 @@ export function TaskAttachments({
                   <Button
                     variant="destructive"
                     size="icon"
-                    className="delete-file opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -91,7 +91,7 @@ export function TaskAttachments({
         {links.length > 0 && (
           <div className="attached-files">
             {links.map((link) => (
-              <div key={link.id} className="file-item">
+              <div key={link.id} className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded">
                 <a
                   href={link.url}
                   target="_blank"
