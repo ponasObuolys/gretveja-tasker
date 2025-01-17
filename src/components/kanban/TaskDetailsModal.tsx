@@ -94,6 +94,33 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
     }
   };
 
+  const handleDeleteFile = async (attachmentId: string) => {
+    if (!isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from("task_attachments")
+        .delete()
+        .eq("id", attachmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Failas ištrintas",
+        description: "Failas sėkmingai ištrintas",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti failo",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!task) return null;
 
   return (
