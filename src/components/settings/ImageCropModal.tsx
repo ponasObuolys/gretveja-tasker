@@ -35,59 +35,96 @@ export function ImageCropModal({
 
   const onImageLoad = useCallback((img: HTMLImageElement) => {
     setImageRef(img);
-    // Center the initial crop
-    const minSize = Math.min(img.width, img.height);
+
+    // Calculate the center position for the initial crop
+    const minDimension = Math.min(img.width, img.height);
+    const cropSize = Math.min(150, minDimension);
+    
     setCrop({
       unit: "px",
-      width: 150,
-      height: 150,
-      x: (img.width - 150) / 2,
-      y: (img.height - 150) / 2,
+      width: cropSize,
+      height: cropSize,
+      x: (img.width - cropSize) / 2,
+      y: (img.height - cropSize) / 2,
     });
   }, []);
 
   const getCroppedImg = useCallback(async () => {
-    if (!imageRef || !completedCrop) return;
+    if (!imageRef || !completedCrop) {
+      console.error("Missing image or crop data");
+      return;
+    }
 
+    // Create a temporary canvas
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      console.error("No 2d context");
+      return;
+    }
 
+    // Set the canvas size to our desired output size
     canvas.width = 150;
     canvas.height = 150;
 
+    // Calculate scale factors
+    const scaleX = imageRef.naturalWidth / imageRef.width;
+    const scaleY = imageRef.naturalHeight / imageRef.height;
+
+    // Calculate the actual source dimensions
+    const sourceX = completedCrop.x * scaleX;
+    const sourceY = completedCrop.y * scaleY;
+    const sourceWidth = completedCrop.width * scaleX;
+    const sourceHeight = completedCrop.height * scaleY;
+
+    // Draw the cropped image
     ctx.drawImage(
       imageRef,
-      completedCrop.x,
-      completedCrop.y,
-      completedCrop.width,
-      completedCrop.height,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
       0,
       0,
       150,
       150
     );
 
+    // Create a circular clipping path
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(75, 75, 75, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+
     return new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-      }, "image/jpeg", 0.95);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+        },
+        "image/jpeg",
+        0.95
+      );
     });
   }, [imageRef, completedCrop]);
 
   const handleCropComplete = async () => {
+    console.log("Starting crop completion");
     const croppedImage = await getCroppedImg();
     if (croppedImage) {
+      console.log("Crop completed successfully");
       onCropComplete(croppedImage);
       onClose();
+    } else {
+      console.error("Failed to generate cropped image");
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] bg-[#242832]">
         <DialogHeader>
-          <DialogTitle>Apkirpti nuotrauką</DialogTitle>
+          <DialogTitle className="text-white">Apkirpti nuotrauką</DialogTitle>
         </DialogHeader>
         <div className="flex justify-center p-4">
           <ReactCrop
@@ -98,19 +135,31 @@ export function ImageCropModal({
             minWidth={150}
             minHeight={150}
             circularCrop
+            className="max-h-[500px]"
           >
             <img
               src={imageUrl}
               onLoad={(e) => onImageLoad(e.currentTarget)}
               alt="Crop"
+              className="max-h-[500px] w-auto"
             />
           </ReactCrop>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="mr-2"
+          >
             Atšaukti
           </Button>
-          <Button onClick={handleCropComplete}>Išsaugoti</Button>
+          <Button
+            type="button"
+            onClick={handleCropComplete}
+          >
+            Išsaugoti
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
