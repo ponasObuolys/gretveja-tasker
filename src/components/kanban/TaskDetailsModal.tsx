@@ -40,6 +40,36 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   const [isUploading, setIsUploading] = useState(false);
   const [newLink, setNewLink] = useState("");
 
+  const handleStatusChange = async (newStatus: Tables<"tasks">["status"]) => {
+    if (!task || !isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", task.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Būsena atnaujinta",
+        description: "Užduoties būsena sėkmingai atnaujinta",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti užduoties būsenos",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (!task || !isAdmin || files.length === 0) return;
