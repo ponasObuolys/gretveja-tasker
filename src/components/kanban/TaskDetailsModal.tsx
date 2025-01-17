@@ -10,6 +10,7 @@ import { TaskHeader } from "./task-details/TaskHeader";
 import { TaskAttachments } from "./task-details/TaskAttachments";
 import { TaskStatusButtons } from "./task-details/TaskStatusButtons";
 import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
+import { cn } from "@/lib/utils";
 
 interface TaskDetailsModalProps {
   task: Tables<"tasks"> & {
@@ -168,14 +169,19 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   return (
     <>
       <Dialog open={isOpen} onOpenChange={() => onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={cn(
+          "max-w-2xl max-h-[90vh] overflow-y-auto",
+          "bg-gradient-to-b from-background/95 to-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        )}>
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-xl">{task.title}</DialogTitle>
-              <TaskActions
-                isAdmin={isAdmin}
-                onDelete={() => setIsDeleteDialogOpen(true)}
-              />
+              <DialogTitle className="text-xl font-bold">{task.title}</DialogTitle>
+              <div className="flex items-center gap-4">
+                <TaskActions
+                  isAdmin={isAdmin}
+                  onDelete={() => setIsDeleteDialogOpen(true)}
+                />
+              </div>
             </div>
           </DialogHeader>
 

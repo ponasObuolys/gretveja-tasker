@@ -48,7 +48,7 @@
 
 @layer components {
   .attachment-section {
-    @apply flex flex-col gap-4 my-4;
+    @apply flex flex-col gap-4 my-4 p-4 rounded-lg bg-secondary/30 backdrop-blur-sm;
   }
 
   .attached-files {
@@ -56,11 +56,11 @@
   }
 
   .file-item {
-    @apply relative p-2 rounded-lg bg-secondary/50;
+    @apply relative p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors;
   }
 
   .delete-file {
-    @apply absolute -top-2 -right-2 p-1 rounded-full bg-destructive;
+    @apply absolute -top-2 -right-2 p-1 rounded-full bg-destructive shadow-lg hover:shadow-xl transition-all;
   }
 
   .modal-actions {
