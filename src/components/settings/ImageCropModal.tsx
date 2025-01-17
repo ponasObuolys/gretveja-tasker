@@ -97,6 +97,7 @@ export function ImageCropModal({
             aspect={1}
             minWidth={150}
             minHeight={150}
+            circularCrop
           >
             <img
               src={imageUrl}
