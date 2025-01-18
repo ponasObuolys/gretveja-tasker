@@ -83,7 +83,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       const { error: notificationsError } = await supabase
         .from("notifications")
         .delete()
-        .eq("task_id", task.id);
+        .eq("task_id", task.id)
+        .throwOnError();
 
       if (notificationsError) {
         console.error("Error deleting task notifications:", notificationsError);
@@ -96,7 +97,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       const { error: attachmentsError } = await supabase
         .from("task_attachments")
         .delete()
-        .eq("task_id", task.id);
+        .eq("task_id", task.id)
+        .throwOnError();
 
       if (attachmentsError) {
         console.error("Error deleting task attachments:", attachmentsError);
@@ -109,7 +111,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       const { error: commentsError } = await supabase
         .from("task_comments")
         .delete()
-        .eq("task_id", task.id);
+        .eq("task_id", task.id)
+        .throwOnError();
 
       if (commentsError) {
         console.error("Error deleting task comments:", commentsError);
@@ -122,7 +125,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       const { error: taskError } = await supabase
         .from("tasks")
         .delete()
-        .eq("id", task.id);
+        .eq("id", task.id)
+        .throwOnError();
 
       if (taskError) {
         console.error("Error deleting task:", taskError);
