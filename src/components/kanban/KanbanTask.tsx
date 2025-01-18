@@ -52,10 +52,13 @@ export function KanbanTask({
   const isAdmin = profile?.role === "ADMIN";
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isSelectionMode && onSelect) {
-      onSelect(task.id);
-    } else {
-      setShowModal(true);
+    // Only handle click if it's directly on the task container
+    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.task-content')) {
+      if (isSelectionMode && onSelect) {
+        onSelect(task.id);
+      } else {
+        setShowModal(true);
+      }
     }
   };
 
@@ -85,7 +88,7 @@ export function KanbanTask({
               />
             </div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 task-content">
               <TaskContent
                 task={task}
                 isSelectionMode={isSelectionMode}
