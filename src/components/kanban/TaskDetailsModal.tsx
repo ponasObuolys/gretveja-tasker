@@ -11,6 +11,7 @@ import { TaskStatusButtons } from "./task-details/TaskStatusButtons";
 import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
 import { TaskAttachmentSection } from "./task-details/TaskAttachmentSection";
 import { TaskDeleteButton } from "./task-details/TaskDeleteButton";
+import { useTaskDeletion } from "./task-details/TaskDeletionHandler";
 
 interface TaskDetailsModalProps {
   task: Tables<"tasks"> & {
@@ -36,6 +37,11 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const { handleDelete } = useTaskDeletion({
+    taskId: task?.id || "",
+    onSuccess: onClose,
+  });
 
   const handleDialogClose = useCallback((open: boolean) => {
     if (!isUploading) {
@@ -68,85 +74,6 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
       toast({
         title: "Klaida",
         description: "Nepavyko atnaujinti užduoties būsenos",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!task || !isAdmin) return;
-
-    try {
-      console.log("Starting task deletion process");
-
-      // First, delete all notifications related to this task
-      const { error: notificationsError } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("task_id", task.id)
-        .throwOnError();
-
-      if (notificationsError) {
-        console.error("Error deleting task notifications:", notificationsError);
-        throw notificationsError;
-      }
-
-      console.log("Task notifications deleted successfully");
-
-      // Then, delete all task attachments
-      const { error: attachmentsError } = await supabase
-        .from("task_attachments")
-        .delete()
-        .eq("task_id", task.id)
-        .throwOnError();
-
-      if (attachmentsError) {
-        console.error("Error deleting task attachments:", attachmentsError);
-        throw attachmentsError;
-      }
-
-      console.log("Task attachments deleted successfully");
-
-      // Then delete all task comments
-      const { error: commentsError } = await supabase
-        .from("task_comments")
-        .delete()
-        .eq("task_id", task.id)
-        .throwOnError();
-
-      if (commentsError) {
-        console.error("Error deleting task comments:", commentsError);
-        throw commentsError;
-      }
-
-      console.log("Task comments deleted successfully");
-
-      // Finally delete the task
-      const { error: taskError } = await supabase
-        .from("tasks")
-        .delete()
-        .eq("id", task.id)
-        .throwOnError();
-
-      if (taskError) {
-        console.error("Error deleting task:", taskError);
-        throw taskError;
-      }
-
-      console.log("Task deleted successfully");
-
-      toast({
-        title: "Užduotis ištrinta",
-        description: "Užduotis sėkmingai ištrinta",
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      onClose();
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko ištrinti užduoties",
         variant: "destructive",
       });
     }
