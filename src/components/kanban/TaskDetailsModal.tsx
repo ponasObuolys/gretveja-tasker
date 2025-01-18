@@ -79,7 +79,20 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
     try {
       console.log("Starting task deletion process");
 
-      // First, delete all task attachments
+      // First, delete all notifications related to this task
+      const { error: notificationsError } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("task_id", task.id);
+
+      if (notificationsError) {
+        console.error("Error deleting task notifications:", notificationsError);
+        throw notificationsError;
+      }
+
+      console.log("Task notifications deleted successfully");
+
+      // Then, delete all task attachments
       const { error: attachmentsError } = await supabase
         .from("task_attachments")
         .delete()
