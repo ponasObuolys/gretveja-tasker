@@ -13,51 +13,8 @@ export const useTaskDeletion = ({ taskId, onSuccess }: TaskDeletionHandlerProps)
 
   const handleDelete = async () => {
     try {
-      console.log("Starting task deletion process");
+      console.log("Starting task deletion process for task:", taskId);
 
-      // First, delete all notifications related to this task
-      const { error: notificationsError } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("task_id", taskId)
-        .throwOnError();
-
-      if (notificationsError) {
-        console.error("Error deleting task notifications:", notificationsError);
-        throw notificationsError;
-      }
-
-      console.log("Task notifications deleted successfully");
-
-      // Then, delete all task attachments
-      const { error: attachmentsError } = await supabase
-        .from("task_attachments")
-        .delete()
-        .eq("task_id", taskId)
-        .throwOnError();
-
-      if (attachmentsError) {
-        console.error("Error deleting task attachments:", attachmentsError);
-        throw attachmentsError;
-      }
-
-      console.log("Task attachments deleted successfully");
-
-      // Then delete all task comments
-      const { error: commentsError } = await supabase
-        .from("task_comments")
-        .delete()
-        .eq("task_id", taskId)
-        .throwOnError();
-
-      if (commentsError) {
-        console.error("Error deleting task comments:", commentsError);
-        throw commentsError;
-      }
-
-      console.log("Task comments deleted successfully");
-
-      // Finally delete the task
       const { error: taskError } = await supabase
         .from("tasks")
         .delete()
@@ -69,7 +26,7 @@ export const useTaskDeletion = ({ taskId, onSuccess }: TaskDeletionHandlerProps)
         throw taskError;
       }
 
-      console.log("Task deleted successfully");
+      console.log("Task and related records deleted successfully");
 
       toast({
         title: "Užduotis ištrinta",
