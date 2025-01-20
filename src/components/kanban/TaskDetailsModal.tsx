@@ -128,6 +128,18 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
           <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
             <TaskHeader task={task} />
 
+            {task.task_attachments && task.task_attachments.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">Prisegti dokumentai:</h3>
+                <TaskAttachments
+                  isAdmin={isAdmin}
+                  attachments={task.task_attachments}
+                  onDeleteFile={handleDeleteFile}
+                  taskId={task.id}
+                />
+              </div>
+            )}
+
             {isAdmin && (
               <TaskAttachmentSection
                 taskId={task.id}
@@ -136,13 +148,6 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
                 onUploadEnd={() => setIsUploading(false)}
               />
             )}
-
-            <TaskAttachments
-              isAdmin={isAdmin}
-              attachments={task.task_attachments}
-              onDeleteFile={handleDeleteFile}
-              taskId={task.id}
-            />
 
             <TaskStatusButtons
               isAdmin={isAdmin}

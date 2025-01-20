@@ -36,7 +36,7 @@ export function TaskAttachments({
   attachments = [],
 }: TaskAttachmentsProps) {
   const { data: fetchedAttachments = [] } = useQuery({
-    queryKey: ["task-attachments"],
+    queryKey: ["task-attachments", taskId],
     queryFn: async () => {
       if (!taskId) return [];
       
