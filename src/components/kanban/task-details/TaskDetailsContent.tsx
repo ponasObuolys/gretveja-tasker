@@ -4,6 +4,7 @@ import { TaskAttachments } from "./TaskAttachments";
 import { TaskAttachmentSection } from "./TaskAttachmentSection";
 import { TaskStatusButtons } from "./TaskStatusButtons";
 import { TaskComments } from "../TaskComments";
+import { FileText } from "lucide-react";
 
 interface TaskDetailsContentProps {
   task: Tables<"tasks"> & {
@@ -68,6 +69,15 @@ export function TaskDetailsContent({
       />
 
       <TaskComments taskId={task.id} isAdmin={isAdmin} />
+
+      {task.task_attachments && task.task_attachments.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <FileText className="h-4 w-4" />
+            <span>Prisegti failai: {task.task_attachments.map(att => att.file_name).join(', ')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
