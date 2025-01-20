@@ -20,12 +20,12 @@ const getFileIcon = (fileName: string) => {
   
   switch (extension) {
     case 'pdf':
-      return <FileText className="h-4 w-4" />;
+      return <FileText className="h-5 w-5 text-primary" />;
     case 'xls':
     case 'xlsx':
-      return <FileSpreadsheet className="h-4 w-4" />;
+      return <FileSpreadsheet className="h-5 w-5 text-primary" />;
     default:
-      return <FileIcon className="h-4 w-4" />;
+      return <FileIcon className="h-5 w-5 text-primary" />;
   }
 };
 
@@ -57,20 +57,21 @@ export function TaskAttachments({
   if (displayAttachments.length === 0) return null;
 
   return (
-    <ScrollArea className="h-[200px] w-full rounded-md border p-4" onClick={e => e.stopPropagation()}>
-      <div className="space-y-4">
-        <div className="attached-files">
+    <div className="space-y-2 mt-4" onClick={e => e.stopPropagation()}>
+      <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
+      <ScrollArea className="h-auto max-h-[200px] w-full rounded-md border border-border bg-card/50 p-4">
+        <div className="space-y-2">
           {displayAttachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="file-item group flex items-center justify-between p-2 hover:bg-gray-100 rounded"
+              className="file-item group flex items-center justify-between gap-2 bg-secondary/50 p-3 rounded-lg"
               onClick={e => e.stopPropagation()}
             >
               <a
                 href={attachment.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm hover:text-primary flex-1"
+                className="flex items-center gap-3 text-sm hover:text-primary flex-1"
                 onClick={e => e.stopPropagation()}
               >
                 {getFileIcon(attachment.file_name)}
@@ -80,7 +81,7 @@ export function TaskAttachments({
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                  className="delete-file opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -93,7 +94,7 @@ export function TaskAttachments({
             </div>
           ))}
         </div>
-      </div>
-    </ScrollArea>
+      </ScrollArea>
+    </div>
   );
 }
