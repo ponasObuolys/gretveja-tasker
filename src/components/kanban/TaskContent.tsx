@@ -1,9 +1,11 @@
 import { format, isPast } from "date-fns";
-import { Star } from "lucide-react";
+import { Star, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Tables } from "@/integrations/supabase/types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskContentProps {
   task: Tables<"tasks"> & {
@@ -26,6 +28,19 @@ export function TaskContent({
 }: TaskContentProps) {
   const isTerminalStatus = TERMINAL_STATUSES.includes(task.status);
   const isOverdue = !isTerminalStatus && task.deadline ? isPast(new Date(task.deadline)) : false;
+
+  const { data: attachments } = useQuery({
+    queryKey: ["task-attachments", task.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("task_attachments")
+        .select("*")
+        .eq("task_id", task.id);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   return (
     <div className="flex items-start gap-2">
@@ -61,6 +76,12 @@ export function TaskContent({
           )}
           {task.priority >= 3 && (
             <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
+          )}
+          {attachments && attachments.length > 0 && (
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Paperclip className="h-3 w-3" />
+              {attachments.length}
+            </Badge>
           )}
         </div>
 
