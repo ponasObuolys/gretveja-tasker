@@ -14,7 +14,8 @@ import { useToast } from "./hooks/use-toast";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
     },
   },
@@ -32,7 +33,10 @@ const AppRoutes = () => {
         
         if (error) {
           console.error("Error getting initial session:", error);
-          await supabase.auth.signOut(); // Clear any stale tokens
+          // Clear any stale data
+          queryClient.clear();
+          localStorage.removeItem('supabase.auth.token');
+          await supabase.auth.signOut();
           navigate("/auth");
           return;
         }
@@ -43,17 +47,32 @@ const AppRoutes = () => {
           return;
         }
 
-        console.log("Initial session found:", {
+        // Attempt to refresh the session
+        const { data: refreshResult, error: refreshError } = 
+          await supabase.auth.refreshSession();
+          
+        if (refreshError) {
+          console.error("Session refresh error:", refreshError);
+          await supabase.auth.signOut();
+          navigate("/auth");
+          return;
+        }
+
+        console.log("Session initialized successfully:", {
           user: session.user.email,
           expiresAt: session.expires_at
         });
       } catch (error) {
         console.error("Auth initialization error:", error);
+        // Handle network errors
+        toast({
+          title: "Prisijungimo klaida",
+          description: "Nepavyko prisijungti prie serverio. Bandykite dar kartą.",
+          variant: "destructive",
+        });
         navigate("/auth");
       }
     };
-
-    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed in AppRoutes:", event, {
@@ -75,6 +94,9 @@ const AppRoutes = () => {
         navigate("/auth");
       }
     });
+
+    // Initialize auth on mount
+    initializeAuth();
 
     return () => {
       console.log("Cleaning up auth subscription in AppRoutes");
