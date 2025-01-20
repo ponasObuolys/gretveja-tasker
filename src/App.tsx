@@ -26,22 +26,47 @@ const AppRoutes = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log("Initializing auth");
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session) {
-        console.log("No initial session found:", error);
+      console.log("Initializing auth in AppRoutes");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting initial session:", error);
+          await supabase.auth.signOut(); // Clear any stale tokens
+          navigate("/auth");
+          return;
+        }
+
+        if (!session) {
+          console.log("No initial session found");
+          navigate("/auth");
+          return;
+        }
+
+        console.log("Initial session found:", {
+          user: session.user.email,
+          expiresAt: session.expires_at
+        });
+      } catch (error) {
+        console.error("Auth initialization error:", error);
         navigate("/auth");
-        return;
       }
     };
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed in AppRoutes:", event, {
+        hasSession: !!session,
+        user: session?.user?.email
+      });
+
       if (event === 'SIGNED_OUT' || !session) {
         console.log("User signed out or session expired");
+        // Clear any stale data
+        queryClient.clear();
+        localStorage.removeItem('supabase.auth.token');
+        
         toast({
           title: "Sesija pasibaigė",
           description: "Prašome prisijungti iš naujo",
@@ -52,7 +77,7 @@ const AppRoutes = () => {
     });
 
     return () => {
-      console.log("Cleaning up auth subscription");
+      console.log("Cleaning up auth subscription in AppRoutes");
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
