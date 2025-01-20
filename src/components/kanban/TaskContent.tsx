@@ -6,10 +6,14 @@ import { cn } from "@/lib/utils";
 import { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskContentProps {
   task: Tables<"tasks"> & {
     created_by_profile?: {
+      email: string | null;
+    } | null;
+    moved_by_profile?: {
       email: string | null;
     } | null;
   };
@@ -20,25 +24,42 @@ interface TaskContentProps {
 
 const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTOS"];
 
-export function TaskContent({ 
+export function TaskContent({
   task,
-  isSelectionMode,
-  isSelected,
-  onSelect
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
 }: TaskContentProps) {
+  const { toast } = useToast();
   const isTerminalStatus = TERMINAL_STATUSES.includes(task.status);
   const isOverdue = !isTerminalStatus && task.deadline ? isPast(new Date(task.deadline)) : false;
 
-  const { data: attachments } = useQuery({
+  const { data: attachments, isError } = useQuery({
     queryKey: ["task-attachments", task.id],
     queryFn: async () => {
+      console.log("Fetching attachments for task:", task.id);
       const { data, error } = await supabase
         .from("task_attachments")
         .select("*")
         .eq("task_id", task.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching attachments:", error);
+        throw error;
+      }
+      
+      console.log("Fetched attachments:", data);
       return data;
+    },
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (error) => {
+      console.error("Failed to fetch attachments:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko gauti prisegtų failų",
+        variant: "destructive",
+      });
     },
   });
 
@@ -49,45 +70,57 @@ export function TaskContent({
           checked={isSelected}
           onCheckedChange={() => onSelect?.(task.id)}
           className="mt-1"
-          onClick={(e) => e.stopPropagation()}
         />
       )}
-      <div className="flex-1 space-y-3">
-        <div className="space-y-2">
-          <h4 className="text-base font-bold leading-tight">{task.title}</h4>
-          {task.description && (
-            <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed">
-              {task.description}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          {task.deadline && (
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "text-xs",
-                isOverdue && "bg-[#ff4b6e] text-white"
-              )}
-            >
-              {format(new Date(task.deadline), "MM-dd")}
-            </Badge>
-          )}
-          {task.priority >= 3 && (
-            <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
-          )}
-          {attachments && attachments.length > 0 && (
-            <Badge variant="outline" className="text-xs flex items-center gap-1">
-              <Paperclip className="h-3 w-3" />
-              {attachments.length}
-            </Badge>
-          )}
+
+      <div className="flex-1 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className={cn(
+            "font-medium leading-none",
+            isTerminalStatus && "line-through opacity-50"
+          )}>
+            {task.title}
+          </h3>
+
+          <div className="flex items-center gap-1">
+            {isOverdue && (
+              <Badge variant="destructive" className="text-[10px]">
+                Vėluoja
+              </Badge>
+            )}
+            {task.priority >= 3 && (
+              <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
+            )}
+            {!isError && attachments && attachments.length > 0 && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Paperclip className="h-3 w-3" />
+                {attachments.length}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="text-xs text-gray-400">
-          {task.created_by_profile?.email ?? "Unknown"}
+          {task.created_by_profile?.email && (
+            <span>Sukūrė: {task.created_by_profile.email}</span>
+          )}
+          {task.moved_by_profile?.email && (
+            <>
+              <span className="mx-1">•</span>
+              <span>Perkėlė: {task.moved_by_profile.email}</span>
+            </>
+          )}
+          {task.deadline && (
+            <>
+              <span className="mx-1">•</span>
+              <span>Terminas: {format(new Date(task.deadline), "yyyy-MM-dd")}</span>
+            </>
+          )}
         </div>
+
+        {task.description && (
+          <p className="text-sm text-gray-400 line-clamp-2">{task.description}</p>
+        )}
       </div>
     </div>
   );
