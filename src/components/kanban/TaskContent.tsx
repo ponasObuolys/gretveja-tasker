@@ -45,6 +45,11 @@ export function TaskContent({
       
       if (error) {
         console.error("Error fetching attachments:", error);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko gauti prisegtų failų",
+          variant: "destructive",
+        });
         throw error;
       }
       
@@ -53,19 +58,6 @@ export function TaskContent({
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    meta: {
-      errorMessage: "Nepavyko gauti prisegtų failų"
-    },
-    onSettled: (data, error) => {
-      if (error) {
-        console.error("Failed to fetch attachments:", error);
-        toast({
-          title: "Klaida",
-          description: "Nepavyko gauti prisegtų failų",
-          variant: "destructive",
-        });
-      }
-    }
   });
 
   return (
