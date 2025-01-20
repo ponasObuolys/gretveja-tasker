@@ -4,14 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback } from "react";
-import { TaskComments } from "./TaskComments";
-import { TaskHeader } from "./task-details/TaskHeader";
-import { TaskAttachments } from "./task-details/TaskAttachments";
-import { TaskStatusButtons } from "./task-details/TaskStatusButtons";
 import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
-import { TaskAttachmentSection } from "./task-details/TaskAttachmentSection";
 import { TaskDeleteButton } from "./task-details/TaskDeleteButton";
 import { useTaskDeletion } from "./task-details/TaskDeletionHandler";
+import { TaskDetailsContent } from "./task-details/TaskDetailsContent";
 
 interface TaskDetailsModalProps {
   task: Tables<"tasks"> & {
@@ -125,38 +121,15 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
             </div>
           </DialogHeader>
 
-          <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-            <TaskHeader task={task} />
-
-            {task.task_attachments && task.task_attachments.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-700">Prisegti dokumentai:</h3>
-                <TaskAttachments
-                  isAdmin={isAdmin}
-                  attachments={task.task_attachments}
-                  onDeleteFile={handleDeleteFile}
-                  taskId={task.id}
-                />
-              </div>
-            )}
-
-            {isAdmin && (
-              <TaskAttachmentSection
-                taskId={task.id}
-                isAdmin={isAdmin}
-                onUploadStart={() => setIsUploading(true)}
-                onUploadEnd={() => setIsUploading(false)}
-              />
-            )}
-
-            <TaskStatusButtons
-              isAdmin={isAdmin}
-              currentStatus={task.status}
-              onStatusChange={handleStatusChange}
-            />
-
-            <TaskComments taskId={task.id} isAdmin={isAdmin} />
-          </div>
+          <TaskDetailsContent
+            task={task}
+            isAdmin={isAdmin}
+            isUploading={isUploading}
+            onUploadStart={() => setIsUploading(true)}
+            onUploadEnd={() => setIsUploading(false)}
+            handleDeleteFile={handleDeleteFile}
+            handleStatusChange={handleStatusChange}
+          />
         </DialogContent>
       </Dialog>
 
