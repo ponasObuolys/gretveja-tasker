@@ -11,23 +11,35 @@ const AuthCallback = () => {
   useEffect(() => {
     console.log("Processing auth callback");
     let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
 
     const handleAuthCallback = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("Auth callback error:", sessionError);
+          console.error("Session error in callback:", sessionError);
           throw sessionError;
         }
 
         if (!session) {
-          console.log("No session found in callback");
+          console.log(`No session found in callback, attempt ${retryCount + 1} of ${maxRetries}`);
+          
+          if (retryCount < maxRetries) {
+            retryCount++;
+            // Wait for 1 second before retrying
+            setTimeout(handleAuthCallback, 1000);
+            return;
+          }
+          
           throw new Error("Nepavyko prisijungti. Bandykite dar kartą.");
         }
 
+        console.log("Auth callback successful, session found for:", session.user.email);
+        
         if (mounted) {
-          console.log("Auth callback successful, redirecting to home");
+          console.log("Redirecting to home after successful auth");
           navigate("/");
         }
       } catch (error) {
