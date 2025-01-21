@@ -1,4 +1,4 @@
 project_id = "mjerbeyhmfstcuuzjedi"
 
 [global.env]
-SITE_URL = "http://localhost:5173"
+SITE_URL = "https://gretveja-tasker.netlify.app"
