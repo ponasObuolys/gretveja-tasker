@@ -48,12 +48,28 @@ export function TaskAttachments({
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
       setDownloadingFiles(prev => new Set(prev).add(fileName));
+      console.log("Downloading file:", fileUrl);
 
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('Nepavyko atsisiųsti failo');
+      // Extract the file path from the URL
+      const filePath = fileUrl.includes('storage/v1/object/public/task_attachments/') 
+        ? fileUrl.split('storage/v1/object/public/task_attachments/')[1]
+        : fileUrl;
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const { data, error } = await supabase.storage
+        .from('task_attachments')
+        .download(filePath);
+
+      if (error) {
+        console.error("Error downloading file:", error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data received from download');
+      }
+
+      // Create a download link
+      const url = window.URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
