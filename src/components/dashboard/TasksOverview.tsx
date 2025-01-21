@@ -4,14 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { format, subDays } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 export function TasksOverview() {
   const [selectedPeriod, setSelectedPeriod] = useState<"7" | "30" | "90">("7");
 
   const { data: tasks } = useQuery({
     queryKey: ["tasks", selectedPeriod],
-    queryFn: async () => {
+    queryFn: useCallback(async () => {
       console.log("Fetching tasks for statistics with period:", selectedPeriod);
       const startDate = format(subDays(new Date(), parseInt(selectedPeriod)), 'yyyy-MM-dd');
       
@@ -27,28 +27,36 @@ export function TasksOverview() {
       }
       console.log("Fetched tasks:", data);
       return data as Tables<"tasks">[];
-    },
+    }, [selectedPeriod]),
   });
 
-  // Calculate statistics
-  const activeTasks = tasks?.filter(task => 
-    task.status === "NAUJOS" || task.status === "VYKDOMOS"
-  ).length ?? 0;
+  // Memoize statistics calculations
+  const statistics = useMemo(() => {
+    const activeTasks = tasks?.filter(task => 
+      task.status === "NAUJOS" || task.status === "VYKDOMOS"
+    ).length ?? 0;
 
-  const completedTasks = tasks?.filter(task => 
-    task.status === "IVYKDYTOS"
-  ).length ?? 0;
+    const completedTasks = tasks?.filter(task => 
+      task.status === "IVYKDYTOS"
+    ).length ?? 0;
 
-  const failedTasks = tasks?.filter(task => 
-    task.status === "ATMESTOS"
-  ).length ?? 0;
+    const failedTasks = tasks?.filter(task => 
+      task.status === "ATMESTOS"
+    ).length ?? 0;
 
-  const successRate = completedTasks + failedTasks > 0
-    ? Math.round((completedTasks / (completedTasks + failedTasks)) * 100)
-    : 0;
+    const successRate = completedTasks + failedTasks > 0
+      ? Math.round((completedTasks / (completedTasks + failedTasks)) * 100)
+      : 0;
 
-  // Generate data for the selected period
-  const generateChartData = () => {
+    return {
+      activeTasks,
+      completedTasks,
+      successRate
+    };
+  }, [tasks]);
+
+  // Memoize chart data generation
+  const chartData = useMemo(() => {
     const data = [];
     const today = new Date();
     const days = parseInt(selectedPeriod);
@@ -72,9 +80,11 @@ export function TasksOverview() {
 
     console.log("Generated chart data:", data);
     return data;
-  };
+  }, [tasks, selectedPeriod]);
 
-  const chartData = generateChartData();
+  const handlePeriodChange = useCallback((value: "7" | "30" | "90") => {
+    setSelectedPeriod(value);
+  }, []);
 
   return (
     <div className="bg-[#242832] rounded-lg p-4 lg:p-6">
@@ -83,7 +93,7 @@ export function TasksOverview() {
         <Select 
           defaultValue="7" 
           value={selectedPeriod}
-          onValueChange={(value) => setSelectedPeriod(value as "7" | "30" | "90")}
+          onValueChange={handlePeriodChange}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Pasirinkite laikotarpį" />
@@ -99,15 +109,15 @@ export function TasksOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-[#1A1D24] p-4 rounded-lg">
           <h4 className="text-sm text-gray-400">Aktyvios</h4>
-          <p className="text-2xl font-semibold mt-1">{activeTasks}</p>
+          <p className="text-2xl font-semibold mt-1">{statistics.activeTasks}</p>
         </div>
         <div className="bg-[#1A1D24] p-4 rounded-lg">
           <h4 className="text-sm text-gray-400">Atliktos</h4>
-          <p className="text-2xl font-semibold mt-1">{completedTasks}</p>
+          <p className="text-2xl font-semibold mt-1">{statistics.completedTasks}</p>
         </div>
         <div className="bg-[#1A1D24] p-4 rounded-lg">
           <h4 className="text-sm text-gray-400">Sėkmės rodiklis</h4>
-          <p className="text-2xl font-semibold mt-1">{successRate}%</p>
+          <p className="text-2xl font-semibold mt-1">{statistics.successRate}%</p>
         </div>
       </div>
 
