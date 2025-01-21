@@ -14,37 +14,41 @@ interface AuthStateChangeHandlers {
   onTokenRefresh: (currentSession: Session | null) => void;
 }
 
-/**
- * Custom hook to manage authentication session state
- * Handles session initialization, auth state changes, and error notifications
- */
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second base delay
+
 export const useAuthSession = (): UseAuthSessionResult => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  /**
-   * Handles session initialization errors
-   */
-  const handleSessionError = (error: Error, mounted: boolean) => {
-    console.error("Session initialization error:", error);
-    if (mounted) {
-      setSession(null);
-      setLoading(false);
-      toast({
-        title: "Sesijos klaida",
-        description: "Prašome prisijungti iš naujo",
-        variant: "destructive",
-      });
+  const handleSessionError = async (error: Error, mounted: boolean, retryCount = 0) => {
+    console.error("Session error:", error, "Retry count:", retryCount);
+    
+    if (!mounted) return;
+
+    if (retryCount < MAX_RETRIES) {
+      const delay = RETRY_DELAY * Math.pow(2, retryCount);
+      console.log(`Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return true; // indicate should retry
     }
+
+    setSession(null);
+    setLoading(false);
+    toast({
+      title: "Sesijos klaida",
+      description: "Prašome prisijungti iš naujo",
+      variant: "destructive",
+    });
+    return false; // indicate should not retry
   };
 
-  /**
-   * Initializes the session state
-   */
-  const initializeSession = async (mounted: boolean) => {
+  const initializeSession = async (mounted: boolean, retryCount = 0) => {
     try {
-      console.log("Initializing session in useAuthSession");
+      console.log(`Initializing session (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      
       const { data: { session: currentSession }, error: sessionError } = 
         await supabase.auth.getSession();
       
@@ -53,29 +57,31 @@ export const useAuthSession = (): UseAuthSessionResult => {
         throw sessionError;
       }
 
-      if (mounted) {
-        if (!currentSession) {
-          console.log("No active session found");
-          setSession(null);
-        } else {
-          console.log("Active session found:", {
-            user: currentSession.user.email,
-            expiresAt: currentSession.expires_at
-          });
-          setSession(currentSession);
-        }
-        setLoading(false);
+      if (!mounted) return;
+
+      if (!currentSession) {
+        console.log("No active session found");
+        setSession(null);
+      } else {
+        console.log("Active session found:", {
+          user: currentSession.user.email,
+          expiresAt: currentSession.expires_at
+        });
+        setSession(currentSession);
       }
+      setLoading(false);
+      
     } catch (error) {
-      handleSessionError(error as Error, mounted);
+      const shouldRetry = await handleSessionError(error as Error, mounted, retryCount);
+      if (shouldRetry && mounted) {
+        await initializeSession(mounted, retryCount + 1);
+      }
     }
   };
 
-  /**
-   * Creates handlers for different auth state changes
-   */
   const createAuthStateHandlers = (): AuthStateChangeHandlers => ({
     onSignIn: (currentSession: Session) => {
+      console.log("User signed in:", currentSession.user.email);
       setSession(currentSession);
       setLoading(false);
       toast({
@@ -88,7 +94,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       setSession(null);
       setLoading(false);
     },
-    onTokenRefresh: (currentSession: Session | null) => {
+    onTokenRefresh: async (currentSession: Session | null) => {
       if (!currentSession) {
         console.log("No session after token refresh");
         setSession(null);
@@ -98,24 +104,38 @@ export const useAuthSession = (): UseAuthSessionResult => {
           description: "Prašome prisijungti iš naujo",
           variant: "destructive",
         });
-      } else {
+        return;
+      }
+
+      try {
+        console.log("Refreshing session token");
+        const { data: refreshResult, error: refreshError } = 
+          await supabase.auth.refreshSession();
+          
+        if (refreshError) throw refreshError;
+        
         console.log("Session refreshed successfully");
-        setSession(currentSession);
+        setSession(refreshResult.session);
         setLoading(false);
+      } catch (error) {
+        console.error("Token refresh error:", error);
+        setSession(null);
+        setLoading(false);
+        toast({
+          title: "Sesijos atnaujinimo klaida",
+          description: "Prašome prisijungti iš naujo",
+          variant: "destructive",
+        });
       }
     }
   });
 
   useEffect(() => {
     let mounted = true;
-
-    // Set up auth state change handlers
     const handlers = createAuthStateHandlers();
 
-    // Initialize session
     initializeSession(mounted);
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state changed:", event, {
@@ -133,16 +153,15 @@ export const useAuthSession = (): UseAuthSessionResult => {
             handlers.onSignOut();
             break;
           case 'TOKEN_REFRESHED':
-            handlers.onTokenRefresh(currentSession);
+            await handlers.onTokenRefresh(currentSession);
             break;
         }
       }
     );
 
-    // Cleanup function
     return () => {
       mounted = false;
-      console.log("Cleaning up auth subscription in useAuthSession");
+      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, [toast]);
