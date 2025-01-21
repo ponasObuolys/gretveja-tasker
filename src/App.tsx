@@ -98,7 +98,7 @@ const App = () => (
   <ErrorBoundary>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={0}>
+        <TooltipProvider>
           <Toaster />
           <Sonner />
           <AppRoutes />
