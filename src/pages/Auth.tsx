@@ -41,6 +41,15 @@ const Auth = () => {
           return;
         }
 
+        // Only clear stale session data if we confirmed there's no active session
+        try {
+          console.log("No active session found, clearing stale data");
+          await supabase.auth.signOut();
+          localStorage.removeItem('supabase.auth.token');
+        } catch (error) {
+          console.error("Error clearing stale session:", error);
+        }
+
         console.log("No active session found");
         if (mounted) {
           setIsLoading(false);
@@ -55,17 +64,7 @@ const Auth = () => {
       }
     };
 
-    const clearStaleSession = async () => {
-      try {
-        console.log("Clearing stale session");
-        await supabase.auth.signOut();
-        localStorage.removeItem('supabase.auth.token');
-      } catch (error) {
-        console.error("Error clearing stale session:", error);
-      }
-    };
-
-    clearStaleSession().then(() => checkSession());
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, {
