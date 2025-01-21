@@ -119,14 +119,12 @@ export function KanbanTask({
               />
             </div>
 
-            <div className="relative z-10 task-content">
-              <TaskContent
-                task={task}
-                isSelectionMode={isSelectionMode}
-                isSelected={isSelected}
-                onSelect={onSelect}
-              />
-            </div>
+            <TaskContent
+              task={task}
+              isSelectionMode={isSelectionMode}
+              isSelected={isSelected}
+              onSelect={onSelect}
+            />
           </div>
         )}
       </Draggable>
