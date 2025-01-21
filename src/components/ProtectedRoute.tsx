@@ -11,6 +11,8 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeSession = async () => {
       try {
         console.log("Initializing session in ProtectedRoute");
@@ -21,30 +23,31 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           throw sessionError;
         }
 
-        if (!currentSession) {
-          console.log("No active session found");
-          // Clear any stale tokens
-          await supabase.auth.signOut();
-          setSession(null);
-          return;
+        // Only update state if component is still mounted
+        if (mounted) {
+          if (!currentSession) {
+            console.log("No active session found");
+            setSession(null);
+          } else {
+            console.log("Active session found:", {
+              user: currentSession.user.email,
+              expiresAt: currentSession.expires_at
+            });
+            setSession(currentSession);
+          }
+          setLoading(false);
         }
-
-        console.log("Active session found:", {
-          user: currentSession.user.email,
-          expiresAt: currentSession.expires_at
-        });
-        
-        setSession(currentSession);
       } catch (error) {
         console.error("Session initialization error:", error);
-        setSession(null);
-        toast({
-          title: "Sesijos klaida",
-          description: "Prašome prisijungti iš naujo",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          setSession(null);
+          setLoading(false);
+          toast({
+            title: "Sesijos klaida",
+            description: "Prašome prisijungti iš naujo",
+            variant: "destructive",
+          });
+        }
       }
     };
 
@@ -57,15 +60,22 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
         if (event === 'SIGNED_IN') {
           setSession(currentSession);
+          setLoading(false);
           toast({
             title: "Prisijungta",
             description: "Sėkmingai prisijungėte prie sistemos",
           });
         } 
-        else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        else if (event === 'SIGNED_OUT') {
+          console.log("User signed out, clearing session");
+          setSession(null);
+          setLoading(false);
+        }
+        else if (event === 'TOKEN_REFRESHED') {
           if (!currentSession) {
-            console.log("No session after token refresh or sign out");
+            console.log("No session after token refresh");
             setSession(null);
+            setLoading(false);
             toast({
               title: "Sesija pasibaigė",
               description: "Prašome prisijungti iš naujo",
@@ -74,6 +84,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           } else {
             console.log("Session refreshed successfully");
             setSession(currentSession);
+            setLoading(false);
           }
         }
       });
@@ -83,7 +94,9 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     initializeSession();
     const { data: { subscription } } = setupAuthListener();
 
+    // Cleanup function
     return () => {
+      mounted = false;
       console.log("Cleaning up auth subscription in ProtectedRoute");
       subscription.unsubscribe();
     };
@@ -91,8 +104,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="text-gray-600">Kraunama...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#1A1D24]">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-white">GRETVĖJA TASKER</h2>
+          <p className="text-gray-400">Kraunama...</p>
+        </div>
       </div>
     );
   }
