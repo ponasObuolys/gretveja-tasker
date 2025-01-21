@@ -102,8 +102,16 @@ export function DashboardLayout() {
           onOpenChange={setIsMobileMenuOpen}
         />
 
-        {/* Left Sidebar with Toggle */}
+        {/* Left Sidebar with Handle */}
         <div className={`relative transition-all duration-300 ease-in-out ${leftSidebarOpen ? 'w-64 min-w-64' : 'w-0'} border-r border-gray-800 max-h-screen overflow-hidden`}>
+          {/* Handle Bar */}
+          <button
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            className={`fixed left-0 top-1/2 -translate-y-1/2 w-6 h-[72px] bg-background/80 backdrop-blur-sm hover:bg-background/90 transition-all duration-300 rounded-r-lg shadow-lg hover:shadow-xl flex items-center justify-center z-50 ${leftSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          
           <Button
             variant="ghost"
             size="icon"
@@ -132,8 +140,16 @@ export function DashboardLayout() {
           />
         </div>
 
-        {/* Right Sidebar with Toggle */}
+        {/* Right Sidebar with Handle */}
         <div className={`relative transition-all duration-300 ease-in-out ${rightSidebarOpen ? 'w-80 min-w-80' : 'w-0'} border-l border-gray-800 max-h-screen overflow-hidden`}>
+          {/* Handle Bar */}
+          <button
+            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+            className={`fixed right-0 top-1/2 -translate-y-1/2 w-6 h-[72px] bg-background/80 backdrop-blur-sm hover:bg-background/90 transition-all duration-300 rounded-l-lg shadow-lg hover:shadow-xl flex items-center justify-center z-50 ${rightSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
           <Button
             variant="ghost"
             size="icon"
