@@ -56,13 +56,10 @@ export function KanbanTask({
   const isAdmin = profile?.role === "ADMIN";
 
   const handleClick = (e: React.MouseEvent) => {
-    // Only handle click if it's directly on the task container
-    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.task-content')) {
-      if (isSelectionMode && onSelect) {
-        onSelect(task.id);
-      } else {
-        setShowModal(true);
-      }
+    if (isSelectionMode && onSelect) {
+      onSelect(task.id);
+    } else {
+      setShowModal(true);
     }
   };
 
@@ -77,6 +74,7 @@ export function KanbanTask({
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
+            {...provided.dragHandleProps}
             className={cn(
               "relative bg-[#1A1D24] rounded-lg p-4 transition-all duration-200 ease-in-out",
               "cursor-pointer hover:bg-[#242832] hover:border-[#FF4B6D] hover:border-2 border-solid",
@@ -86,12 +84,6 @@ export function KanbanTask({
             )}
             onClick={handleClick}
           >
-            <div {...provided.dragHandleProps}>
-              <TaskDragHandle
-                disabled={task.is_commenting}
-              />
-            </div>
-
             <TaskContent
               task={task}
               isSelectionMode={isSelectionMode}
