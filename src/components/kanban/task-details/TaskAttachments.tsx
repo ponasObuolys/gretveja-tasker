@@ -50,13 +50,14 @@ export function TaskAttachments({
       setDownloadingFiles(prev => new Set(prev).add(fileName));
       console.log("Downloading file:", fileUrl);
 
-      // Get just the file path after task_attachments/
-      const filePath = fileUrl.split('task_attachments/').pop();
-      
-      if (!filePath) {
-        throw new Error('Invalid file path');
+      // Extract just the task ID and file name from the URL
+      const matches = fileUrl.match(/task_attachments\/([^/]+)\/([^/]+)$/);
+      if (!matches) {
+        throw new Error('Invalid file URL format');
       }
 
+      const [, taskId, filename] = matches;
+      const filePath = `${taskId}/${filename}`;
       console.log("Attempting to download with path:", filePath);
 
       const { data, error } = await supabase.storage
