@@ -55,7 +55,6 @@ const Auth = () => {
       }
     };
 
-    // Clear any stale auth state
     const clearStaleSession = async () => {
       try {
         await supabase.auth.signOut();
@@ -134,6 +133,10 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           redirectTo={`${window.location.origin}/auth/callback`}
+          view="sign_in"
+          showLinks={false}
+          otpType="email"
+          magicLink={false}
         />
       )}
     </AuthContainer>
