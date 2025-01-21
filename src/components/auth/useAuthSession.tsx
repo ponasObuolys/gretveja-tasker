@@ -15,6 +15,9 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
   useEffect(() => {
     let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000;
 
     const initializeSession = async () => {
       try {
@@ -23,6 +26,13 @@ export const useAuthSession = (): UseAuthSessionResult => {
         
         if (error) {
           console.error("Error getting session:", error);
+          if (retryCount < maxRetries && mounted) {
+            retryCount++;
+            console.log(`Retrying session initialization in ${retryDelay}ms`);
+            setTimeout(initializeSession, retryDelay);
+            return;
+          }
+          
           toast({
             title: "Klaida",
             description: "Nepavyko gauti sesijos. Bandykite dar kartą.",
@@ -42,17 +52,22 @@ export const useAuthSession = (): UseAuthSessionResult => {
       } catch (error) {
         console.error("Session initialization error:", error);
         if (mounted) {
-          setLoading(false);
-          toast({
-            title: "Klaida",
-            description: "Įvyko klaida. Bandykite dar kartą vėliau.",
-            variant: "destructive",
-          });
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying after error in ${retryDelay}ms`);
+            setTimeout(initializeSession, retryDelay);
+          } else {
+            setLoading(false);
+            toast({
+              title: "Klaida",
+              description: "Įvyko klaida. Bandykite dar kartą vėliau.",
+              variant: "destructive",
+            });
+          }
         }
       }
     };
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state changed:", event, {
@@ -81,10 +96,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
       }
     );
 
-    // Initialize session
     initializeSession();
 
-    // Cleanup
     return () => {
       mounted = false;
       console.log("Cleaning up auth subscription in useAuthSession");

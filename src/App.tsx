@@ -11,6 +11,7 @@ import AuthCallback from "./pages/auth/callback";
 import { createQueryClient } from "./utils/queryClientConfig";
 import { useAuthManagement } from "./hooks/useAuthManagement";
 import { initSentry } from "./utils/sentry";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
 
 // Initialize Sentry as early as possible
@@ -89,15 +90,17 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppRoutes />
-      </TooltipProvider>
-    </QueryClientProvider>
-  </BrowserRouter>
+  <ErrorBoundary>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
+  </ErrorBoundary>
 );
 
 export default App;
