@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionCheck } from "@/utils/sessionUtils";
 import { SettingsContent } from "@/components/settings/SettingsContent";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
 
 export type Profile = {
   id: string;
@@ -49,6 +51,11 @@ export default function Settings() {
     },
   });
 
+  const handleGoBack = () => {
+    console.log("Navigating back to dashboard");
+    navigate("/");
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
@@ -61,12 +68,14 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-[#1A1D24] p-8">
       <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-8 text-gray-400 hover:text-white transition-colors"
+        <Button
+          variant="ghost"
+          className="mb-8 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+          onClick={handleGoBack}
         >
-          ← Grįžti atgal
-        </button>
+          <ChevronLeft className="h-4 w-4" />
+          Grįžti atgal
+        </Button>
 
         <SettingsContent profile={profile} />
       </div>
