@@ -1,30 +1,56 @@
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization";
-import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
+import { useToast } from "@/hooks/use-toast";
 
 interface UseAuthSessionResult {
   session: Session | null;
   loading: boolean;
 }
 
-/**
- * Custom hook to manage authentication session state
- * Handles session initialization, auth state changes, and error notifications
- */
 export const useAuthSession = (): UseAuthSessionResult => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const { initializeSession } = useSessionInitialization(setSession, setLoading);
-  const handlers = useAuthStateHandlers(setSession, setLoading);
+  const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
 
-    // Initialize session
-    initializeSession(mounted);
+    const initializeSession = async () => {
+      try {
+        console.log("Initializing session in useAuthSession");
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          toast({
+            title: "Klaida",
+            description: "Nepavyko gauti sesijos. Bandykite dar kartą.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (mounted) {
+          console.log("Setting initial session:", {
+            hasSession: !!currentSession,
+            user: currentSession?.user?.email
+          });
+          setSession(currentSession);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Session initialization error:", error);
+        if (mounted) {
+          setLoading(false);
+          toast({
+            title: "Klaida",
+            description: "Įvyko klaida. Bandykite dar kartą vėliau.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
 
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -36,27 +62,35 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
         if (!mounted) return;
 
-        switch (event) {
-          case 'SIGNED_IN':
-            handlers.onSignIn(currentSession!);
-            break;
-          case 'SIGNED_OUT':
-            handlers.onSignOut();
-            break;
-          case 'TOKEN_REFRESHED':
-            handlers.onTokenRefresh(currentSession);
-            break;
+        if (event === 'SIGNED_IN') {
+          setSession(currentSession);
+          setLoading(false);
+          toast({
+            title: "Prisijungta",
+            description: "Sėkmingai prisijungėte prie sistemos",
+          });
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setLoading(false);
+          console.log("User signed out");
+        } else if (event === 'TOKEN_REFRESHED') {
+          setSession(currentSession);
+          setLoading(false);
+          console.log("Token refreshed");
         }
       }
     );
 
-    // Cleanup function
+    // Initialize session
+    initializeSession();
+
+    // Cleanup
     return () => {
       mounted = false;
       console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   return { session, loading };
 };
