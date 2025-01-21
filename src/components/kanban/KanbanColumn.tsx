@@ -34,12 +34,13 @@ export function KanbanColumn({
       {...provided.droppableProps}
       className={cn(
         "bg-[#242832] rounded-lg p-4 h-full w-full transition-colors",
+        "flex flex-col min-h-[24rem]",
         isDraggingOver && "bg-[#2A2F3A]",
         "relative"
       )}
     >
-      <h3 className="font-medium mb-4 truncate">{title}</h3>
-      <div className="space-y-3">
+      <h3 className="font-medium mb-4 truncate text-sm lg:text-base">{title}</h3>
+      <div className="space-y-3 flex-1 overflow-y-auto">
         {tasks.map((task, index) => (
           <KanbanTask 
             key={task.id} 

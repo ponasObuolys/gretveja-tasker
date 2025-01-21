@@ -1,4 +1,4 @@
-import { format, isPast } from "date-fns";
+import { format } from "date-fns";
 import { Star, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,26 +70,26 @@ export function TaskContent({
         />
       )}
 
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-2 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h3 className={cn(
-            "font-medium leading-none",
+            "font-medium leading-tight text-sm lg:text-base break-words line-clamp-2",
             isTerminalStatus && "line-through opacity-50"
           )}>
             {task.title}
           </h3>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {isOverdue && (
-              <Badge variant="destructive" className="text-[10px]">
+              <Badge variant="destructive" className="text-[10px] whitespace-nowrap">
                 Vėluoja
               </Badge>
             )}
             {task.priority >= 3 && (
-              <Star className="h-4 w-4 text-[#FFD700]" fill="#FFD700" />
+              <Star className="h-4 w-4 text-[#FFD700] flex-shrink-0" fill="#FFD700" />
             )}
             {!isError && attachments && attachments.length > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Badge variant="outline" className="text-xs flex items-center gap-1 whitespace-nowrap">
                 <Paperclip className="h-3 w-3" />
                 {attachments.length}
               </Badge>
@@ -97,7 +97,7 @@ export function TaskContent({
           </div>
         </div>
 
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-400 truncate">
           {task.created_by_profile?.email && (
             <span>Sukūrė: {task.created_by_profile.email}</span>
           )}
@@ -116,7 +116,9 @@ export function TaskContent({
         </div>
 
         {task.description && (
-          <p className="text-sm text-gray-400 line-clamp-2">{task.description}</p>
+          <p className="text-sm text-gray-400 line-clamp-2 break-words px-1">
+            {task.description}
+          </p>
         )}
       </div>
     </div>

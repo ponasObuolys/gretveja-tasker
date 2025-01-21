@@ -139,7 +139,7 @@ export function KanbanBoard({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-6 gap-2 min-h-[calc(100vh-14rem)] w-full overflow-x-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 min-h-[calc(100vh-14rem)] w-full overflow-x-auto p-2">
         {columns.map((column) => (
           <Droppable key={column.id} droppableId={column.id}>
             {(provided, snapshot) => (
