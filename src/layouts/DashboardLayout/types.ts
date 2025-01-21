@@ -1,4 +1,4 @@
-import { TaskFilter } from "@/components/dashboard/DashboardLayout";
+export type TaskFilter = "all" | "recent" | "priority";
 
 export interface SidebarProps {
   isOpen: boolean;
