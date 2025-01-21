@@ -14,7 +14,14 @@ import { useToast } from "./hooks/use-toast";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      retry: (failureCount, error) => {
+        // Don't retry on 404s or auth errors
+        if (error instanceof Error && error.message.includes('Auth')) {
+          return false;
+        }
+        // Retry up to 3 times with exponential backoff
+        return failureCount < 3;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
     },
@@ -29,10 +36,24 @@ const AppRoutes = () => {
     const initializeAuth = async () => {
       console.log("Initializing auth in AppRoutes");
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error("Error getting initial session:", error);
+        if (sessionError) {
+          console.error("Error getting initial session:", sessionError);
+          // Show network error toast if it's a network issue
+          if (sessionError.message === "Failed to fetch") {
+            toast({
+              title: "Tinklo klaida",
+              description: "Nepavyko prisijungti prie serverio. Patikrinkite interneto ryšį.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Prisijungimo klaida",
+              description: "Nepavyko gauti sesijos. Bandykite dar kartą.",
+              variant: "destructive",
+            });
+          }
           // Clear any stale data
           queryClient.clear();
           localStorage.removeItem('supabase.auth.token');
@@ -53,6 +74,11 @@ const AppRoutes = () => {
           
         if (refreshError) {
           console.error("Session refresh error:", refreshError);
+          toast({
+            title: "Sesijos klaida",
+            description: "Nepavyko atnaujinti sesijos. Prašome prisijungti iš naujo.",
+            variant: "destructive",
+          });
           await supabase.auth.signOut();
           navigate("/auth");
           return;
@@ -95,8 +121,30 @@ const AppRoutes = () => {
       }
     });
 
-    // Initialize auth on mount
-    initializeAuth();
+    // Initialize auth on mount with retry logic
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryAuth = async () => {
+      try {
+        await initializeAuth();
+      } catch (error) {
+        console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          const delay = Math.min(1000 * 2 ** retryCount, 30000);
+          setTimeout(retryAuth, delay);
+        } else {
+          console.error("Max retries reached for auth initialization");
+          toast({
+            title: "Prisijungimo klaida",
+            description: "Nepavyko prisijungti po kelių bandymų. Perkraukite puslapį.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    retryAuth();
 
     return () => {
       console.log("Cleaning up auth subscription in AppRoutes");
