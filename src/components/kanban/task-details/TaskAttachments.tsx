@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, FileSpreadsheet, X, FileIcon } from "lucide-react";
+import { FileText, Download, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskAttachmentsProps {
   isAdmin: boolean;
@@ -15,26 +17,15 @@ interface TaskAttachmentsProps {
   }[];
 }
 
-const getFileIcon = (fileName: string) => {
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  
-  switch (extension) {
-    case 'pdf':
-      return <FileText className="h-5 w-5 text-primary" />;
-    case 'xls':
-    case 'xlsx':
-      return <FileSpreadsheet className="h-5 w-5 text-primary" />;
-    default:
-      return <FileIcon className="h-5 w-5 text-primary" />;
-  }
-};
-
 export function TaskAttachments({
   isAdmin,
   taskId,
   onDeleteFile,
   attachments = [],
 }: TaskAttachmentsProps) {
+  const { toast } = useToast();
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+
   const { data: fetchedAttachments = [] } = useQuery({
     queryKey: ["task-attachments", taskId],
     queryFn: async () => {
@@ -54,47 +45,94 @@ export function TaskAttachments({
 
   const displayAttachments = attachments.length > 0 ? attachments : fetchedAttachments;
 
-  if (displayAttachments.length === 0) return null;
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      setDownloadingFiles(prev => new Set(prev).add(fileName));
+
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('Nepavyko atsisiųsti failo');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Failas atsisiųstas",
+        description: "Failas sėkmingai atsisiųstas",
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atsisiųsti failo",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileName);
+        return newSet;
+      });
+    }
+  };
+
+  if (displayAttachments.length === 0) {
+    return (
+      <div className="text-sm text-gray-400 text-center py-4">
+        Nėra prisegtų dokumentų
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-2 mt-4" onClick={e => e.stopPropagation()}>
-      <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
-      <ScrollArea className="h-auto max-h-[200px] w-full rounded-md border border-border bg-card/50 p-4">
-        <div className="space-y-2">
-          {displayAttachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="file-item group flex items-center justify-between gap-2 bg-secondary/50 p-3 rounded-lg"
-              onClick={e => e.stopPropagation()}
-            >
-              <a
-                href={attachment.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm hover:text-primary flex-1"
-                onClick={e => e.stopPropagation()}
+    <ScrollArea className="h-auto max-h-[200px] w-full rounded-md border border-border bg-card/50 p-4">
+      <div className="space-y-2">
+        {displayAttachments.map((attachment) => (
+          <div
+            key={attachment.id}
+            className="file-item group flex items-center justify-between gap-2"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 text-sm flex-1 min-w-0">
+              <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+              <span className="truncate">{attachment.file_name}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleDownload(attachment.file_url, attachment.file_name)}
+                disabled={downloadingFiles.has(attachment.file_name)}
               >
-                {getFileIcon(attachment.file_name)}
-                <span className="truncate">{attachment.file_name}</span>
-              </a>
+                <Download className={`h-4 w-4 ${downloadingFiles.has(attachment.file_name) ? 'animate-pulse' : ''}`} />
+              </Button>
+
               {isAdmin && (
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="delete-file opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="delete-file opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     onDeleteFile(attachment.id);
                   }}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
+          </div>
+        ))}
+      </div>
+    </ScrollArea>
   );
 }

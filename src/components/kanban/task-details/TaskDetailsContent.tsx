@@ -41,17 +41,19 @@ export function TaskDetailsContent({
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
       <TaskHeader task={task} />
 
-      {task.task_attachments && task.task_attachments.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700">Prisegti dokumentai:</h3>
-          <TaskAttachments
-            isAdmin={isAdmin}
-            attachments={task.task_attachments}
-            onDeleteFile={handleDeleteFile}
-            taskId={task.id}
-          />
-        </div>
+      {task.description && (
+        <p className="text-sm text-gray-200 whitespace-pre-wrap">{task.description}</p>
       )}
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
+        <TaskAttachments
+          isAdmin={isAdmin}
+          attachments={task.task_attachments}
+          onDeleteFile={handleDeleteFile}
+          taskId={task.id}
+        />
+      </div>
 
       {isAdmin && (
         <TaskAttachmentSection
@@ -69,15 +71,6 @@ export function TaskDetailsContent({
       />
 
       <TaskComments taskId={task.id} isAdmin={isAdmin} />
-
-      {task.task_attachments && task.task_attachments.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <FileText className="h-4 w-4" />
-            <span>Prisegti failai: {task.task_attachments.map(att => att.file_name).join(', ')}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
