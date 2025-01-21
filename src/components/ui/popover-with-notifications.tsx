@@ -10,10 +10,31 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNotifications } from "@/contexts/NotificationContext";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 export function NotificationsPopover() {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+
+  const getInitials = (email: string | null) => {
+    if (!email) return "U";
+    return email
+      .split("@")[0]
+      .split(".")
+      .map(part => part[0]?.toUpperCase() || "")
+      .join("");
+  };
+
+  const formatUserName = (email: string | null) => {
+    if (!email) return "Nežinomas vartotojas";
+    return email.split("@")[0].split(".").map(
+      part => part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(" ");
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -52,39 +73,68 @@ export function NotificationsPopover() {
             </div>
           ) : (
             <div className="space-y-1">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`flex items-start gap-3 p-3 hover:bg-[#242832] ${
-                    notification.unread ? "bg-[#1A1D24]" : ""
-                  }`}
-                  onClick={() => notification.unread && markAsRead(notification.id)}
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={notification.profile?.avatar_url || ""}
-                      alt={notification.profile?.email || ""}
-                    />
-                    <AvatarFallback>
-                      {notification.profile?.email?.[0]?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm">
-                      <span className="font-medium">
-                        {notification.task?.created_by_profile?.email || notification.profile?.email || "Nežinomas vartotojas"}
-                      </span>{" "}
-                      {notification.action}{" "}
-                      <span className="font-medium">
-                        {notification.task?.title}
-                      </span>
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {format(new Date(notification.created_at), "MMM d, HH:mm")}
-                    </p>
+              {notifications.map((notification) => {
+                const userEmail = notification.task?.created_by_profile?.email || notification.profile?.email;
+                const userName = formatUserName(userEmail);
+                
+                return (
+                  <div
+                    key={notification.id}
+                    className={`flex items-start gap-3 p-3 hover:bg-[#242832] ${
+                      notification.unread ? "bg-[#1A1D24]" : ""
+                    }`}
+                    onClick={() => notification.unread && markAsRead(notification.id)}
+                  >
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <div className="cursor-pointer">
+                          <Avatar className="h-8 w-8 ring-1 ring-gray-700">
+                            <AvatarImage
+                              src={notification.task?.created_by_profile?.avatar_url || notification.profile?.avatar_url}
+                              alt={userName}
+                            />
+                            <AvatarFallback className="bg-[#242832] text-gray-300">
+                              {getInitials(userEmail)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-60 bg-[#1A1D24] border border-gray-700">
+                        <div className="flex flex-col gap-2">
+                          <Avatar className="h-12 w-12 ring-1 ring-gray-700">
+                            <AvatarImage
+                              src={notification.task?.created_by_profile?.avatar_url || notification.profile?.avatar_url}
+                              alt={userName}
+                            />
+                            <AvatarFallback className="bg-[#242832] text-gray-300 text-lg">
+                              {getInitials(userEmail)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="text-sm font-semibold">{userName}</h4>
+                            <p className="text-xs text-gray-400">{userEmail}</p>
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          {userName}
+                        </span>{" "}
+                        {notification.action}{" "}
+                        <span className="font-medium">
+                          {notification.task?.title}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {format(new Date(notification.created_at), "MMM d, HH:mm")}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>
