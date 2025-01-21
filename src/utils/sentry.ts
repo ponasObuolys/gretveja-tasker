@@ -24,8 +24,8 @@ export const initSentry = () => {
         maxQueueSize: 30,
         // Configure rate limiting
         transportOptions: {
-          maxRequests: 100, // Max 100 requests per minute
-          maxQueueSize: 50, // Max 50 events in queue
+          rateLimit: 100, // Max 100 requests per minute
+          bufferSize: 50, // Max 50 events in queue
         }
       }).getTransport();
     },
