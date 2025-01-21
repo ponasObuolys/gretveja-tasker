@@ -8,14 +8,10 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { session, isLoading: loading, isError: error } = useAuthSession();
+  const { session, loading } = useAuthSession();
 
   if (loading) {
     return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return <ErrorMessage message="An error occurred while checking authentication." />;
   }
 
   if (!session) {
