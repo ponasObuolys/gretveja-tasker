@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { session, loading, error } = useAuthSession();
+  const { session, isLoading: loading, isError: error } = useAuthSession();
 
   if (loading) {
     return <LoadingSpinner />;
