@@ -41,15 +41,6 @@ const Auth = () => {
           return;
         }
 
-        // Only clear stale session data if we confirmed there's no active session
-        try {
-          console.log("No active session found, clearing stale data");
-          await supabase.auth.signOut();
-          localStorage.removeItem('supabase.auth.token');
-        } catch (error) {
-          console.error("Error clearing stale session:", error);
-        }
-
         console.log("No active session found");
         if (mounted) {
           setIsLoading(false);
