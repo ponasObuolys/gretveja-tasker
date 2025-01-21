@@ -57,6 +57,7 @@ const Auth = () => {
 
     const clearStaleSession = async () => {
       try {
+        console.log("Clearing stale session");
         await supabase.auth.signOut();
         localStorage.removeItem('supabase.auth.token');
       } catch (error) {
@@ -132,11 +133,11 @@ const Auth = () => {
           appearance={authAppearance}
           localization={{ variables: authLocalization.variables }}
           providers={[]}
-          redirectTo={`${window.location.origin}/auth/callback`}
           view="sign_in"
           showLinks={false}
           otpType="email"
           magicLink={false}
+          redirectTo={`${window.location.origin}/auth/callback`}
         />
       )}
     </AuthContainer>
