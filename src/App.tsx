@@ -21,27 +21,34 @@ const AppRoutes = () => {
     let mounted = true;
     let retryCount = 0;
     const maxRetries = 3;
+    const retryDelay = 2000; // Fixed delay of 2 seconds between retries
     
     const retryAuth = async () => {
-      if (!mounted) return;
+      if (!mounted) {
+        console.log("Component unmounted, stopping auth initialization");
+        return;
+      }
 
       try {
         console.log(`Auth initialization attempt ${retryCount + 1}`);
         await initializeAuth();
+        console.log("Auth initialization successful");
       } catch (error) {
         console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
         if (retryCount < maxRetries && mounted) {
           retryCount++;
-          const delay = Math.min(1000 * 2 ** retryCount, 30000);
-          setTimeout(retryAuth, delay);
+          console.log(`Retrying auth initialization in ${retryDelay}ms`);
+          setTimeout(retryAuth, retryDelay);
         } else {
           console.error("Max retries reached for auth initialization");
         }
       }
     };
 
+    // Start auth initialization
     retryAuth();
 
+    // Setup auth state listener
     const { data: { subscription } } = setupAuthListener();
 
     return () => {
