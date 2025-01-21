@@ -15,11 +15,13 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // Don't retry on 404s or auth errors
-        if (error instanceof Error && error.message.includes('Auth')) {
-          return false;
+        if (error instanceof Error) {
+          // Don't retry on auth errors or network failures
+          if (error.message.includes('Auth') || error.message.includes('Failed to fetch')) {
+            console.error('Not retrying query due to:', error.message);
+            return false;
+          }
         }
-        // Retry up to 3 times with exponential backoff
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -40,11 +42,10 @@ const AppRoutes = () => {
         
         if (sessionError) {
           console.error("Error getting initial session:", sessionError);
-          // Show network error toast if it's a network issue
-          if (sessionError.message === "Failed to fetch") {
+          if (sessionError.message.includes('Failed to fetch')) {
             toast({
               title: "Tinklo klaida",
-              description: "Nepavyko prisijungti prie serverio. Patikrinkite interneto ryšį.",
+              description: "Nepavyko prisijungti prie serverio. Patikrinkite interneto ryšį ir bandykite dar kartą.",
               variant: "destructive",
             });
           } else {
@@ -54,7 +55,7 @@ const AppRoutes = () => {
               variant: "destructive",
             });
           }
-          // Clear any stale data
+          // Clear any stale data and redirect to auth
           queryClient.clear();
           localStorage.removeItem('supabase.auth.token');
           await supabase.auth.signOut();
@@ -74,11 +75,19 @@ const AppRoutes = () => {
           
         if (refreshError) {
           console.error("Session refresh error:", refreshError);
-          toast({
-            title: "Sesijos klaida",
-            description: "Nepavyko atnaujinti sesijos. Prašome prisijungti iš naujo.",
-            variant: "destructive",
-          });
+          if (refreshError.message.includes('Failed to fetch')) {
+            toast({
+              title: "Tinklo klaida",
+              description: "Nepavyko atnaujinti sesijos. Patikrinkite interneto ryšį.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Sesijos klaida",
+              description: "Nepavyko atnaujinti sesijos. Prašome prisijungti iš naujo.",
+              variant: "destructive",
+            });
+          }
           await supabase.auth.signOut();
           navigate("/auth");
           return;
@@ -90,7 +99,6 @@ const AppRoutes = () => {
         });
       } catch (error) {
         console.error("Auth initialization error:", error);
-        // Handle network errors
         toast({
           title: "Prisijungimo klaida",
           description: "Nepavyko prisijungti prie serverio. Bandykite dar kartą.",
@@ -108,7 +116,6 @@ const AppRoutes = () => {
 
       if (event === 'SIGNED_OUT' || !session) {
         console.log("User signed out or session expired");
-        // Clear any stale data
         queryClient.clear();
         localStorage.removeItem('supabase.auth.token');
         
