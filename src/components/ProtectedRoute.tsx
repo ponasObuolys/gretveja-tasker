@@ -1,22 +1,26 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { LoadingScreen } from "./auth/LoadingScreen";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { ErrorMessage } from "@/components/shared/ErrorMessage";
 import { useAuthSession } from "./auth/useAuthSession";
+import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const location = useLocation();
-  const { session, loading } = useAuthSession();
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { session, loading, error } = useAuthSession();
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorMessage message="An error occurred while checking authentication." />;
   }
 
   if (!session) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth" />;
   }
 
   return <>{children}</>;
-};
+}

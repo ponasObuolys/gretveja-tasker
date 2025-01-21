@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { DashboardLayout } from "./components/dashboard/DashboardLayout";
+import { DashboardLayout } from "./layouts/DashboardLayout";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/auth/callback";
 import { createQueryClient } from "./utils/queryClientConfig";
