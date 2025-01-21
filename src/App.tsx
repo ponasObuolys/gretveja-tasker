@@ -10,6 +10,12 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/auth/callback";
 import { createQueryClient } from "./utils/queryClientConfig";
 import { useAuthManagement } from "./hooks/useAuthManagement";
+import { initSentry } from "./utils/sentry";
+
+// Initialize Sentry as early as possible
+if (import.meta.env.PROD) {
+  initSentry();
+}
 
 const queryClient = createQueryClient();
 
@@ -41,6 +47,16 @@ const AppRoutes = () => {
           setTimeout(retryAuth, retryDelay);
         } else {
           console.error("Max retries reached for auth initialization");
+          // Report critical auth errors to Sentry
+          if (import.meta.env.PROD) {
+            Sentry.captureException(error, {
+              level: 'error',
+              tags: {
+                type: 'auth_initialization_failed',
+                retryCount: retryCount.toString()
+              }
+            });
+          }
         }
       }
     };
