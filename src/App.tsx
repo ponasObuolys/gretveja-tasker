@@ -11,6 +11,7 @@ import AuthCallback from "./pages/auth/callback";
 import { createQueryClient } from "./utils/queryClientConfig";
 import { useAuthManagement } from "./hooks/useAuthManagement";
 import { initSentry } from "./utils/sentry";
+import * as Sentry from "@sentry/react";
 
 // Initialize Sentry as early as possible
 if (import.meta.env.PROD) {

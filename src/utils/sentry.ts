@@ -17,7 +17,7 @@ export const initSentry = () => {
     normalizeDepth: 5,
     
     // Configure transport options for batching
-    transport: Sentry.makeBrowserTransport({
+    transport: Sentry.makeXHRTransport({
       // Batch events and send them every 30 seconds or when reaching 30 events
       bufferSize: 30,
       flushTimeout: 30000,
