@@ -27,6 +27,8 @@ export function DashboardContent({
   setSelectedTasks,
   handleTaskSelect,
 }: DashboardContentProps) {
+  console.log("Rendering DashboardContent with activeTab:", activeTab);
+
   const DashboardView = () => (
     <div className="p-4 lg:p-6">
       <h2 className="text-xl lg:text-2xl font-semibold mb-6">Užduočių apžvalga</h2>

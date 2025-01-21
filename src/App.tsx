@@ -28,7 +28,7 @@ const AppRoutes = () => {
     let mounted = true;
     let retryCount = 0;
     const maxRetries = 3;
-    const retryDelay = 2000; // Fixed delay of 2 seconds between retries
+    const retryDelay = 2000;
     
     const retryAuth = async () => {
       if (!mounted) {
@@ -48,7 +48,6 @@ const AppRoutes = () => {
           setTimeout(retryAuth, retryDelay);
         } else {
           console.error("Max retries reached for auth initialization");
-          // Report critical auth errors to Sentry
           if (import.meta.env.PROD) {
             Sentry.captureException(error, {
               level: 'error',
@@ -62,10 +61,8 @@ const AppRoutes = () => {
       }
     };
 
-    // Start auth initialization
     retryAuth();
 
-    // Setup auth state listener
     const { data: { subscription } } = setupAuthListener();
 
     return () => {
