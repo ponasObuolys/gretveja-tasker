@@ -34,8 +34,6 @@ export function KanbanTask({
   onSelect
 }: KanbanTaskProps) {
   const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { data: profile } = useQuery({
@@ -65,31 +63,6 @@ export function KanbanTask({
       } else {
         setShowModal(true);
       }
-    }
-  };
-
-  const handleAuth = async () => {
-    try {
-      setIsLoading(true);
-      setAuthError(null);
-      
-      await signIn(); // Your existing auth method
-      
-      // Add a small delay to ensure token is properly set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify auth state before proceeding
-      const isAuthenticated = await checkAuthState();
-      if (!isAuthenticated) {
-        throw new Error('Authentication failed');
-      }
-      
-      navigate('/dashboard');
-    } catch (error) {
-      setAuthError('Authentication failed. Please try again.');
-      console.error('Auth error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -135,9 +108,6 @@ export function KanbanTask({
         onClose={() => setShowModal(false)}
         isAdmin={isAdmin}
       />
-
-      {isLoading && <LoadingSpinner />}
-      {authError && <ErrorMessage message={authError} />}
     </>
   );
 }
