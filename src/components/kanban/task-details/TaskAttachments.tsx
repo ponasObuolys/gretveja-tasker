@@ -120,7 +120,7 @@ export function TaskAttachments({
               <span className="truncate">{attachment.file_name}</span>
             </div>
 
-            <div className="flex items-center gap-1 ml-2">  {/* Changed gap-2 to gap-1 and added ml-2 */}
+            <div className="flex items-center gap-1 ml-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -133,9 +133,9 @@ export function TaskAttachments({
 
               {isAdmin && (
                 <Button
-                  variant="ghost"  {/* Changed from destructive to ghost */}
+                  variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"  {/* Modified hover states */}
+                  className="h-8 w-8 hover:bg-destructive hover:text-destructive-foreground"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
