@@ -20,7 +20,7 @@ interface DashboardContentProps {
   handleTaskSelect: (taskId: string) => void;
 }
 
-export function DashboardContent({
+function DashboardContent({
   isAdmin,
   activeTab,
   isSelectionMode,
@@ -73,3 +73,5 @@ export function DashboardContent({
     </Routes>
   );
 }
+
+export default DashboardContent;

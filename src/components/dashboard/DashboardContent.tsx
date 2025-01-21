@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { TasksOverview } from "./TasksOverview";
-import { KanbanBoard } from "../kanban/KanbanBoard";
+import KanbanBoard from "../kanban/KanbanBoard";
 import { TaskActions } from "./TaskActions";
 import { TaskFilters } from "./TaskFilters";
 import { TaskFilter } from "./DashboardLayout";

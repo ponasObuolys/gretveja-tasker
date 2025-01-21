@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import KanbanBoard from "@/components/kanban/KanbanBoard";
 
 const Index = () => {
   const navigate = useNavigate();
