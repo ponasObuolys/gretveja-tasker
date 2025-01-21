@@ -40,6 +40,39 @@ export const useAuthSession = (): UseAuthSessionResult => {
   };
 
   /**
+   * Attempts to refresh the session
+   */
+  const refreshSession = async (mounted: boolean) => {
+    try {
+      console.log("Attempting to refresh session");
+      const { data: { session: refreshedSession }, error: refreshError } = 
+        await supabase.auth.refreshSession();
+
+      if (refreshError) {
+        console.error("Session refresh error:", refreshError);
+        throw refreshError;
+      }
+
+      if (!refreshedSession) {
+        console.log("No session after refresh attempt");
+        if (mounted) {
+          setSession(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      console.log("Session refreshed successfully");
+      if (mounted) {
+        setSession(refreshedSession);
+        setLoading(false);
+      }
+    } catch (error) {
+      handleSessionError(error as Error, mounted);
+    }
+  };
+
+  /**
    * Initializes the session state
    */
   const initializeSession = async (mounted: boolean) => {
@@ -50,7 +83,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
       
       if (sessionError) {
         console.error("Error getting session:", sessionError);
-        throw sessionError;
+        await refreshSession(mounted);
+        return;
       }
 
       if (mounted) {
@@ -88,7 +122,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       setSession(null);
       setLoading(false);
     },
-    onTokenRefresh: (currentSession: Session | null) => {
+    onTokenRefresh: async (currentSession: Session | null) => {
       if (!currentSession) {
         console.log("No session after token refresh");
         setSession(null);
