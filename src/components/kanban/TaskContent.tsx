@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isPast } from "date-fns";
 import { Star, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
