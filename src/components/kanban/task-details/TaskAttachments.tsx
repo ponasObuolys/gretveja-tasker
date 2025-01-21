@@ -49,19 +49,19 @@ export function TaskAttachments({
    try {
      setDownloadingFiles(prev => new Set(prev).add(fileName));
      
-     const storageUrl = new URL(fileUrl);
-     const filePath = storageUrl.pathname.split('/object/task_attachments/')[1];
-     
-     if (!filePath) {
+     const pathParts = fileUrl.split('task_attachments/')[1];
+     if (!pathParts) {
        throw new Error('Invalid file URL format');
      }
 
+     console.log('Attempting to download:', pathParts);
+
      const { data, error } = await supabase.storage
        .from('task_attachments')
-       .download(filePath);
+       .download(pathParts);
 
      if (error) {
-       console.error("Error downloading file:", error);
+       console.error("Supabase download error:", error);
        throw error;
      }
 
@@ -85,7 +85,7 @@ export function TaskAttachments({
    } catch (error) {
      console.error('Download error:', error);
      toast({
-       title: "Klaida", 
+       title: "Klaida",
        description: "Nepavyko atsisiųsti failo",
        variant: "destructive",
      });
