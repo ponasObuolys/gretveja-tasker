@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Toast } from "@/hooks/use-toast";
+import { toast as ToastFunction } from "@/hooks/use-toast";
 
 export interface AuthStateChangeHandlers {
   onSignIn: (currentSession: Session) => void;
@@ -11,7 +11,7 @@ export interface AuthStateChangeHandlers {
 export const createAuthStateHandlers = (
   setSession: (session: Session | null) => void,
   setLoading: (loading: boolean) => void,
-  toast: Toast
+  toast: typeof ToastFunction
 ): AuthStateChangeHandlers => ({
   onSignIn: (currentSession: Session) => {
     console.log("User signed in:", currentSession.user.email);

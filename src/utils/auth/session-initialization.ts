@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Toast } from "@/hooks/use-toast";
+import { toast as ToastFunction } from "@/hooks/use-toast";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second base delay
@@ -11,7 +11,7 @@ export const handleSessionError = async (
   retryCount = 0,
   setSession: (session: Session | null) => void,
   setLoading: (loading: boolean) => void,
-  toast: Toast
+  toast: typeof ToastFunction
 ) => {
   console.error("Session error:", error, "Retry count:", retryCount);
   
@@ -39,7 +39,7 @@ export const initializeSession = async (
   mounted: boolean,
   setSession: (session: Session | null) => void,
   setLoading: (loading: boolean) => void,
-  toast: Toast,
+  toast: typeof ToastFunction,
   retryCount = 0
 ) => {
   try {
