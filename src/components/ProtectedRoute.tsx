@@ -1,6 +1,6 @@
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorMessage } from "@/components/shared/ErrorMessage";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthSession } from "./auth/useAuthSession";
 import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { session, loading } = useAuthStore();
+  const { session, loading } = useAuthSession();
 
   if (loading) {
     return <LoadingSpinner />;

@@ -26,29 +26,42 @@ const AppRoutes = () => {
   useEffect(() => {
     console.log("Starting auth initialization in AppRoutes");
     let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000;
     
-    const initAuth = async () => {
-      if (!mounted) return;
-      
+    const retryAuth = async () => {
+      if (!mounted) {
+        console.log("Component unmounted, stopping auth initialization");
+        return;
+      }
+
       try {
-        console.log("Starting auth initialization");
+        console.log(`Auth initialization attempt ${retryCount + 1}`);
         await initializeAuth();
         console.log("Auth initialization successful");
-      } catch (error: any) {
-        console.error("Auth initialization failed:", error);
-        if (mounted && import.meta.env.PROD) {
-          Sentry.captureException(error, {
-            level: 'error',
-            tags: {
-              type: 'auth_initialization_failed',
-              errorType: error.error_type || 'unknown'
-            }
-          });
+      } catch (error) {
+        console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
+        if (retryCount < maxRetries && mounted) {
+          retryCount++;
+          console.log(`Retrying auth initialization in ${retryDelay}ms`);
+          setTimeout(retryAuth, retryDelay);
+        } else {
+          console.error("Max retries reached for auth initialization");
+          if (import.meta.env.PROD) {
+            Sentry.captureException(error, {
+              level: 'error',
+              tags: {
+                type: 'auth_initialization_failed',
+                retryCount: retryCount.toString()
+              }
+            });
+          }
         }
       }
     };
 
-    initAuth();
+    retryAuth();
 
     const { data: { subscription } } = setupAuthListener();
 
