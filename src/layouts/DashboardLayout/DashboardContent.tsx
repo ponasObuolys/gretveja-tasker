@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { TaskFilter } from "./types";
+import { TaskFilter } from "@/components/dashboard/DashboardLayout";
 
 // Lazy load components
 const TasksOverview = lazy(() => import("./components/TasksOverview"));
