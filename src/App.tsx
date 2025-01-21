@@ -27,9 +27,17 @@ const AppRoutes = () => {
     console.log("Starting auth initialization in AppRoutes");
     let mounted = true;
     let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 2000;
+    const maxRetries = 5; // Increased from 3 to 5
+    const retryDelay = 3000; // Increased from 2000 to 3000
     
+    const isNetworkError = (error: any) => {
+      return (
+        error.message === "Failed to fetch" ||
+        error.message?.includes("network") ||
+        error.error_type === "http_server_error"
+      );
+    };
+
     const retryAuth = async () => {
       if (!mounted) {
         console.log("Component unmounted, stopping auth initialization");
@@ -40,20 +48,39 @@ const AppRoutes = () => {
         console.log(`Auth initialization attempt ${retryCount + 1}`);
         await initializeAuth();
         console.log("Auth initialization successful");
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
-        if (retryCount < maxRetries && mounted) {
-          retryCount++;
-          console.log(`Retrying auth initialization in ${retryDelay}ms`);
-          setTimeout(retryAuth, retryDelay);
+        
+        // Special handling for network errors
+        if (isNetworkError(error)) {
+          console.log("Network error detected, will retry");
+          if (retryCount < maxRetries && mounted) {
+            retryCount++;
+            const exponentialDelay = retryDelay * Math.pow(2, retryCount - 1);
+            console.log(`Retrying auth initialization in ${exponentialDelay}ms (attempt ${retryCount})`);
+            setTimeout(retryAuth, exponentialDelay);
+          } else {
+            console.error("Max retries reached for auth initialization");
+            if (import.meta.env.PROD) {
+              Sentry.captureException(error, {
+                level: 'error',
+                tags: {
+                  type: 'auth_initialization_failed',
+                  retryCount: retryCount.toString(),
+                  errorType: 'network_error'
+                }
+              });
+            }
+          }
         } else {
-          console.error("Max retries reached for auth initialization");
+          // Non-network errors
+          console.error("Non-network error during auth initialization:", error);
           if (import.meta.env.PROD) {
             Sentry.captureException(error, {
               level: 'error',
               tags: {
                 type: 'auth_initialization_failed',
-                retryCount: retryCount.toString()
+                errorType: 'non_network_error'
               }
             });
           }
