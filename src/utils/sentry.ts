@@ -17,18 +17,7 @@ export const initSentry = () => {
     normalizeDepth: 5,
     
     // Configure transport options
-    transport: options => {
-      return new Sentry.BrowserClient({
-        ...options,
-        // Configure batching
-        maxQueueSize: 30,
-        // Configure rate limiting
-        transportOptions: {
-          rateLimit: 100, // Max 100 requests per minute
-          bufferSize: 50, // Max 50 events in queue
-        }
-      }).getTransport();
-    },
+    transport: Sentry.makeXHRTransport,
     
     beforeSend(event) {
       // Don't send events in development
