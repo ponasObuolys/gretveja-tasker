@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
@@ -17,16 +17,20 @@ const AppRoutes = () => {
   const { initializeAuth, setupAuthListener } = useAuthManagement({ queryClient });
 
   useEffect(() => {
-    // Initialize auth on mount with retry logic
+    console.log("Starting auth initialization in AppRoutes");
+    let mounted = true;
     let retryCount = 0;
     const maxRetries = 3;
     
     const retryAuth = async () => {
+      if (!mounted) return;
+
       try {
+        console.log(`Auth initialization attempt ${retryCount + 1}`);
         await initializeAuth();
       } catch (error) {
         console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
-        if (retryCount < maxRetries) {
+        if (retryCount < maxRetries && mounted) {
           retryCount++;
           const delay = Math.min(1000 * 2 ** retryCount, 30000);
           setTimeout(retryAuth, delay);
@@ -41,6 +45,7 @@ const AppRoutes = () => {
     const { data: { subscription } } = setupAuthListener();
 
     return () => {
+      mounted = false;
       console.log("Cleaning up auth subscription in AppRoutes");
       subscription.unsubscribe();
     };

@@ -9,29 +9,41 @@ const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("Processing auth callback");
+    let mounted = true;
+
     const handleAuthCallback = async () => {
-      console.log("Processing auth callback");
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (sessionError) {
-        console.error("Auth callback error:", sessionError);
-        setError(sessionError.message);
-        setTimeout(() => navigate("/auth"), 2000);
-        return;
+        if (sessionError) {
+          console.error("Auth callback error:", sessionError);
+          throw sessionError;
+        }
+
+        if (!session) {
+          console.log("No session found in callback");
+          throw new Error("Nepavyko prisijungti. Bandykite dar kartą.");
+        }
+
+        if (mounted) {
+          console.log("Auth callback successful, redirecting to home");
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Auth callback error:", error);
+        if (mounted) {
+          setError(error instanceof Error ? error.message : "Prisijungimo klaida");
+          setTimeout(() => mounted && navigate("/auth"), 2000);
+        }
       }
-
-      if (!session) {
-        console.log("No session found in callback");
-        setError("Nepavyko prisijungti. Bandykite dar kartą.");
-        setTimeout(() => navigate("/auth"), 2000);
-        return;
-      }
-
-      console.log("Auth callback successful, redirecting to home");
-      navigate("/");
     };
 
     handleAuthCallback();
+
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   return (

@@ -14,81 +14,67 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormReady, setIsFormReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsFormReady(true);
-    }, 100);
+    console.log("Auth component mounted");
+    let mounted = true;
 
-    return () => {
-      clearTimeout(timer);
-      console.log("Auth component unmounting - resetting state");
-      setError(null);
-      setIsLoading(false);
-    };
-  }, []);
-
-  useEffect(() => {
-    const clearStaleSession = async () => {
-      console.log("Checking for and clearing stale session");
+    const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Current session state:", {
-          exists: !!session,
-          user: session?.user?.email,
-          expiresAt: session?.expires_at
-        });
+        console.log("Checking for existing session");
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (!session) {
-          console.log("No active session found, clearing any stale auth state");
-          await supabase.auth.signOut();
-          localStorage.removeItem('supabase.auth.token');
+        if (sessionError) {
+          console.error("Session check error:", sessionError);
+          if (mounted) {
+            setError(getErrorMessage(sessionError));
+            setIsLoading(false);
+          }
+          return;
         }
+
+        if (session?.user) {
+          console.log("Active session found, redirecting to home");
+          navigate("/");
+          return;
+        }
+
+        console.log("No active session found");
+        if (mounted) {
+          setIsLoading(false);
+          setIsFormReady(true);
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
+        if (mounted) {
+          setError(error instanceof AuthError ? getErrorMessage(error) : "Sesijos patikrinimo klaida");
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Clear any stale auth state
+    const clearStaleSession = async () => {
+      try {
+        await supabase.auth.signOut();
+        localStorage.removeItem('supabase.auth.token');
       } catch (error) {
         console.error("Error clearing stale session:", error);
       }
     };
 
-    const checkExistingSession = async () => {
-      setIsLoading(true);
-      try {
-        await clearStaleSession();
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Session check error:", sessionError);
-          throw sessionError;
-        }
-
-        if (session?.user) {
-          console.log("Active session found:", {
-            email: session.user.email,
-            id: session.user.id,
-            role: session.user.role,
-            lastSignInAt: session.user.last_sign_in_at
-          });
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Session check failed:", error);
-        setError(error instanceof AuthError ? getErrorMessage(error) : "Sesijos patikrinimo klaida");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkExistingSession();
+    clearStaleSession().then(() => checkSession());
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event, {
+      console.log("Auth state changed:", event, {
         hasSession: !!session,
-        userEmail: session?.user?.email,
-        userId: session?.user?.id,
-        lastSignIn: session?.user?.last_sign_in_at
+        userEmail: session?.user?.email
       });
       
+      if (!mounted) return;
+
       if (event === "SIGNED_IN" && session?.user) {
         try {
           const { data: profile, error: profileError } = await supabase
@@ -97,19 +83,11 @@ const Auth = () => {
             .eq("id", session.user.id)
             .single();
 
-          if (profileError) {
-            console.error("Profile fetch error:", profileError);
-            throw new Error(profileError.message);
-          }
-
-          if (!profile) {
-            console.error("No profile found for user:", session.user.id);
-            throw new Error("Profilis nerastas");
-          }
+          if (profileError) throw profileError;
 
           toast({
             title: "Sėkmingai prisijungta",
-            description: profile.role === "ADMIN" ? 
+            description: profile?.role === "ADMIN" ? 
               "Sveiki sugrįžę, administratoriau!" : 
               "Sveiki sugrįžę!"
           });
@@ -117,27 +95,19 @@ const Auth = () => {
           navigate("/");
         } catch (error) {
           console.error("Profile fetch error:", error);
-          setError(error instanceof Error ? error.message : "Profilio gavimo klaida");
-        }
-      } else if (event === "SIGNED_OUT") {
-        console.log("User signed out, clearing error state");
-        setError(null);
-      } else if (event === "USER_UPDATED") {
-        const { error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error("Session error after user update:", sessionError);
-          setError(getErrorMessage(sessionError));
+          setError("Profilio gavimo klaida");
         }
       }
     });
 
     return () => {
-      console.log("Cleaning up auth subscription");
+      mounted = false;
+      console.log("Auth component unmounting");
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
 
-  if (!isFormReady || isLoading) {
+  if (isLoading) {
     return (
       <AuthContainer>
         <div className="flex items-center justify-center">
@@ -157,13 +127,15 @@ const Auth = () => {
         </Alert>
       )}
 
-      <SupabaseAuth 
-        supabaseClient={supabase}
-        appearance={authAppearance}
-        localization={{ variables: authLocalization.variables }}
-        providers={[]}
-        redirectTo={`${window.location.origin}/auth/callback`}
-      />
+      {isFormReady && (
+        <SupabaseAuth 
+          supabaseClient={supabase}
+          appearance={authAppearance}
+          localization={{ variables: authLocalization.variables }}
+          providers={[]}
+          redirectTo={`${window.location.origin}/auth/callback`}
+        />
+      )}
     </AuthContainer>
   );
 };
