@@ -11,24 +11,6 @@ export const useAuthManagement = ({ queryClient }: UseAuthManagementProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleNetworkError = (message: string) => {
-    console.error("Network error:", message);
-    toast({
-      title: "Tinklo klaida",
-      description: "Nepavyko prisijungti prie serverio. Patikrinkite interneto ryšį ir bandykite dar kartą.",
-      variant: "destructive",
-    });
-  };
-
-  const handleAuthError = (message: string) => {
-    console.error("Auth error:", message);
-    toast({
-      title: "Prisijungimo klaida",
-      description: "Nepavyko gauti sesijos. Bandykite dar kartą.",
-      variant: "destructive",
-    });
-  };
-
   const clearAuthData = async () => {
     console.log("Clearing auth data");
     queryClient.clear();
@@ -44,11 +26,6 @@ export const useAuthManagement = ({ queryClient }: UseAuthManagementProps) => {
       
       if (sessionError) {
         console.error("Error getting initial session:", sessionError);
-        if (sessionError.message.includes('Failed to fetch')) {
-          handleNetworkError(sessionError.message);
-        } else {
-          handleAuthError(sessionError.message);
-        }
         await clearAuthData();
         return;
       }
@@ -56,20 +33,6 @@ export const useAuthManagement = ({ queryClient }: UseAuthManagementProps) => {
       if (!session) {
         console.log("No initial session found");
         navigate("/auth");
-        return;
-      }
-
-      const { data: refreshResult, error: refreshError } = 
-        await supabase.auth.refreshSession();
-        
-      if (refreshError) {
-        console.error("Session refresh error:", refreshError);
-        if (refreshError.message.includes('Failed to fetch')) {
-          handleNetworkError(refreshError.message);
-        } else {
-          handleAuthError(refreshError.message);
-        }
-        await clearAuthData();
         return;
       }
 
