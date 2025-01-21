@@ -9,6 +9,7 @@ import { fetchTasks, updateTaskStatus, TaskWithProfile } from "@/utils/taskUtils
 import { isPast } from "date-fns";
 import { useEffect } from "react";
 import { useSearchStore } from "@/stores/searchStore";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KanbanBoardProps {
   filter?: TaskFilter;
@@ -35,9 +36,29 @@ export function KanbanBoard({
     queryFn: () => fetchTasks(filter, searchQuery),
   });
 
+  const sendEmailNotification = async (taskId: string, type: "new_task" | "task_completed") => {
+    try {
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: { type, taskId },
+      });
+
+      if (error) {
+        console.error("Error sending email notification:", error);
+      }
+    } catch (error) {
+      console.error("Error invoking send-email function:", error);
+    }
+  };
+
   const updateTaskStatusMutation = useMutation({
-    mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) =>
-      updateTaskStatus(taskId, newStatus),
+    mutationFn: async ({ taskId, newStatus }: { taskId: string; newStatus: Tables<"tasks">["status"] }) => {
+      await updateTaskStatus(taskId, newStatus);
+      
+      // Send email notification when task is completed
+      if (newStatus === "IVYKDYTOS") {
+        await sendEmailNotification(taskId, "task_completed");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast({
