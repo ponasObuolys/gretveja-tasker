@@ -6,12 +6,8 @@ export function UserProfile() {
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      console.log("Fetching user profile");
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("No user found");
-        throw new Error("No user found");
-      }
+      if (!user) throw new Error("No user found");
       
       const { data, error } = await supabase
         .from("profiles")
@@ -19,11 +15,7 @@ export function UserProfile() {
         .eq("id", user.id)
         .single();
         
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      console.log("Fetched profile:", data);
+      if (error) throw error;
       return data;
     },
   });
@@ -46,6 +38,7 @@ export function UserProfile() {
     },
   });
 
+  // Calculate statistics from all historical data
   const activeTasks = tasks?.filter(task => 
     task.status === "NAUJOS" || task.status === "VYKDOMOS"
   ).length ?? 0;
@@ -62,19 +55,11 @@ export function UserProfile() {
     ? Math.round((completedTasks / totalTasksWithOutcome) * 100)
     : 0;
 
-  const avatarUrl = profile?.avatar_url 
-    ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-    : null;
-
-  console.log("Avatar URL:", avatarUrl);
-
   return (
     <div className="text-center mb-8">
       <Avatar className="w-20 h-20 mx-auto mb-4">
-        <AvatarImage src={avatarUrl || "/placeholder.svg"} />
-        <AvatarFallback>
-          {profile?.email?.charAt(0).toUpperCase() || 'U'}
-        </AvatarFallback>
+        <AvatarImage src="/placeholder.svg" />
+        <AvatarFallback>UN</AvatarFallback>
       </Avatar>
       
       <h3 className="font-medium text-lg mb-1">{profile?.email}</h3>

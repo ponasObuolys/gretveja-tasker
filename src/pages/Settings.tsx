@@ -3,9 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionCheck } from "@/utils/sessionUtils";
 import { SettingsContent } from "@/components/settings/SettingsContent";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ErrorMessage } from "@/components/ErrorMessage";
-import { useToast } from "@/hooks/use-toast";
 
 export type Profile = {
   id: string;
@@ -23,7 +20,6 @@ export type Profile = {
 export default function Settings() {
   const navigate = useNavigate();
   const sessionCheck = useSessionCheck(navigate);
-  const { toast } = useToast();
 
   const { data: profile, error: profileError, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -53,34 +49,20 @@ export default function Settings() {
     },
   });
 
-  const handleNavigateBack = async () => {
-    try {
-      console.log("Attempting to navigate back");
-      navigate("/");
-    } catch (error) {
-      console.error("Navigation error:", error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko grįžti atgal. Bandykite dar kartą.",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <div className="flex items-center justify-center min-h-screen">Kraunama...</div>;
   }
 
   if (profileError) {
     console.error("Profile fetch error:", profileError);
-    return <ErrorMessage message="Įvyko klaida bandant gauti profilio duomenis" />;
+    return <div className="flex items-center justify-center min-h-screen">Įvyko klaida</div>;
   }
 
   return (
     <div className="min-h-screen bg-[#1A1D24] p-8">
       <div className="max-w-2xl mx-auto">
         <button
-          onClick={handleNavigateBack}
+          onClick={() => navigate(-1)}
           className="mb-8 text-gray-400 hover:text-white transition-colors"
         >
           ← Grįžti atgal

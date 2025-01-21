@@ -55,25 +55,6 @@ export function useTaskForm(onSuccess: () => void) {
     }
   };
 
-  const sendEmailNotification = async (type: "new_task" | "task_completed", taskId: string) => {
-    try {
-      const { error } = await supabase.functions.invoke("send-email", {
-        body: { type, taskId },
-      });
-
-      if (error) {
-        console.error("Error sending email notification:", error);
-        toast({
-          title: "Klaida",
-          description: "Nepavyko išsiųsti pranešimo el. paštu",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error invoking send-email function:", error);
-    }
-  };
-
   const onSubmit = async (data: TaskFormValues) => {
     try {
       setIsSubmitting(true);
@@ -110,9 +91,6 @@ export function useTaskForm(onSuccess: () => void) {
       if (selectedFiles.length > 0 && task) {
         await uploadFiles(task.id, user.id);
       }
-
-      // Send email notification for new task
-      await sendEmailNotification("new_task", task.id);
 
       // Get all profiles except the creator to notify them
       const { data: profiles } = await supabase

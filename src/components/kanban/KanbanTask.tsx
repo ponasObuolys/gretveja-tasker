@@ -7,6 +7,9 @@ import { useState } from "react";
 import { TaskDetailsModal } from "./TaskDetailsModal";
 import { TaskContent } from "./TaskContent";
 import { TaskDragHandle } from "./TaskDragHandle";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ErrorMessage } from "@/components/ErrorMessage";
+import { useNavigate } from "react-router-dom";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -31,11 +34,11 @@ export function KanbanTask({
   onSelect
 }: KanbanTaskProps) {
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      console.log("Fetching profile for task permissions");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
       
@@ -45,11 +48,7 @@ export function KanbanTask({
         .eq("id", user.id)
         .single();
         
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      console.log("Fetched profile for task:", data);
+      if (error) throw error;
       return data;
     },
   });
@@ -57,14 +56,11 @@ export function KanbanTask({
   const isAdmin = profile?.role === "ADMIN";
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log("Task clicked:", task.id);
     // Only handle click if it's directly on the task container
     if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.task-content')) {
       if (isSelectionMode && onSelect) {
-        console.log("Selection mode - selecting task:", task.id);
         onSelect(task.id);
       } else {
-        console.log("Opening task modal for:", task.id);
         setShowModal(true);
       }
     }
