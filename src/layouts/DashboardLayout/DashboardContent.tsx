@@ -1,14 +1,13 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+import { TasksOverview } from "./components/TasksOverview";
+import { TaskActions } from "./components/TaskActions";
+import { TaskFilters } from "./components/TaskFilters";
+import { TaskFilter } from "./types";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { TaskFilter } from "@/components/dashboard/DashboardLayout";
 
-// Lazy load components
-const TasksOverview = lazy(() => import("./components/TasksOverview"));
-const KanbanBoard = lazy(() => import("@/components/kanban/KanbanBoard"));
-const TaskActions = lazy(() => import("./components/TaskActions"));
-const TaskFilters = lazy(() => import("./components/TaskFilters"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const KanbanBoard = lazy(() => import("@/components/kanban/KanbanBoard"));
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -36,24 +35,18 @@ export function DashboardContent({
       <h2 className="text-xl lg:text-2xl font-semibold mb-6">Užduočių apžvalga</h2>
       
       <div className="hidden md:block mb-8">
-        <Suspense fallback={<LoadingSpinner />}>
-          <TasksOverview />
-        </Suspense>
+        <TasksOverview />
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <Suspense fallback={<LoadingSpinner />}>
-          <TaskActions
-            isAdmin={isAdmin}
-            isSelectionMode={isSelectionMode}
-            selectedTasks={selectedTasks}
-            setIsSelectionMode={setIsSelectionMode}
-            setSelectedTasks={setSelectedTasks}
-          />
-        </Suspense>
-        <Suspense fallback={<LoadingSpinner />}>
-          <TaskFilters onFilterChange={setActiveTab} />
-        </Suspense>
+        <TaskActions
+          isAdmin={isAdmin}
+          isSelectionMode={isSelectionMode}
+          selectedTasks={selectedTasks}
+          setIsSelectionMode={setIsSelectionMode}
+          setSelectedTasks={setSelectedTasks}
+        />
+        <TaskFilters onFilterChange={setActiveTab} />
       </div>
 
       <div className="flex-1 w-full">
@@ -80,5 +73,3 @@ export function DashboardContent({
     </Routes>
   );
 }
-
-export default DashboardContent;

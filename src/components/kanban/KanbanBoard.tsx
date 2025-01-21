@@ -20,12 +20,12 @@ interface KanbanBoardProps {
 const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTOS"] as const;
 const DELAYED_STATUS = "VELUOJANCIOS";
 
-export function KanbanBoard({
+const KanbanBoard = ({
   filter = "all",
   isSelectionMode = false,
   selectedTasks = [],
   onTaskSelect
-}: KanbanBoardProps) {
+}: KanbanBoardProps) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { searchQuery } = useSearchStore();
@@ -159,4 +159,6 @@ export function KanbanBoard({
       </div>
     </DragDropContext>
   );
-}
+};
+
+export default KanbanBoard;
