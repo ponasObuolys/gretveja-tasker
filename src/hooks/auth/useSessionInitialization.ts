@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserPreferencesStore } from "@/stores/userPreferencesStore";
 
 interface UseSessionInitializationResult {
   initializeSession: (mounted: boolean) => Promise<void>;
@@ -13,12 +13,17 @@ export const useSessionInitialization = (
   setLoading: (loading: boolean) => void
 ): UseSessionInitializationResult => {
   const { toast } = useToast();
+  const setPreferences = useUserPreferencesStore((state) => state.setPreferences);
 
   const handleSessionError = (error: Error, mounted: boolean) => {
     console.error("Session initialization error:", error);
     if (mounted) {
       setSession(null);
       setLoading(false);
+      setPreferences({
+        email: null,
+        role: null,
+      });
       toast({
         title: "Sesijos klaida",
         description: "Prašome prisijungti iš naujo",
@@ -50,6 +55,10 @@ export const useSessionInitialization = (
       console.log("Session refreshed successfully");
       if (mounted) {
         setSession(refreshedSession);
+        setPreferences({
+          email: refreshedSession.user.email,
+          role: refreshedSession.user.role,
+        });
         setLoading(false);
       }
     } catch (error) {
@@ -73,12 +82,20 @@ export const useSessionInitialization = (
         if (!currentSession) {
           console.log("No active session found");
           setSession(null);
+          setPreferences({
+            email: null,
+            role: null,
+          });
         } else {
           console.log("Active session found:", {
             user: currentSession.user.email,
             expiresAt: currentSession.expires_at
           });
           setSession(currentSession);
+          setPreferences({
+            email: currentSession.user.email,
+            role: currentSession.user.role,
+          });
         }
         setLoading(false);
       }
