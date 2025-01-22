@@ -4,12 +4,15 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { TaskFormFields } from "./task-form/TaskFormFields";
 import { useTaskForm } from "./task-form/useTaskForm";
 import { useState } from "react";
+import { Form } from "@/components/ui/form";
 
 export function CreateTaskDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const { form, isSubmitting, selectedFiles, handleFileChange, onSubmit } = useTaskForm(() => {
     setIsOpen(false);
   });
+
+  console.log("Form context:", form); // Debug log to verify form initialization
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -23,12 +26,14 @@ export function CreateTaskDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={form.handleSubmit((data) => onSubmit(data))} className="space-y-4">
-          <TaskFormFields form={form} onFileChange={handleFileChange} />
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            Sukurti
-          </Button>
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <TaskFormFields form={form} onFileChange={handleFileChange} />
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              Sukurti
+            </Button>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -12,6 +12,8 @@ interface TaskFormFieldsProps {
 }
 
 export function TaskFormFields({ form, onFileChange }: TaskFormFieldsProps) {
+  console.log("TaskFormFields form context:", form); // Debug log
+
   return (
     <>
       <FormField
