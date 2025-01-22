@@ -1,41 +1,30 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { TaskFormFields } from "./task-form/TaskFormFields";
 import { useTaskForm } from "./task-form/useTaskForm";
 
 export function CreateTaskDialog() {
-  const [open, setOpen] = useState(false);
-  const { form, isSubmitting, handleFileChange, onSubmit } = useTaskForm(() => setOpen(false));
+  const { form, onSubmit, onFileChange } = useTaskForm();
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
-        <Button className="w-full">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nauja užduotis
+        <Button 
+          size="lg"
+          className="fixed bottom-20 right-4 sm:relative sm:bottom-auto sm:right-auto rounded-full sm:rounded-lg shadow-lg hover:shadow-xl transition-shadow px-6 py-6 sm:py-2 z-10"
+        >
+          <Plus className="h-5 w-5 sm:mr-2" />
+          <span className="hidden sm:inline">Nauja užduotis</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Sukurti naują užduotį</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <TaskFormFields form={form} onFileChange={handleFileChange} />
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Kuriama..." : "Sukurti"}
-            </Button>
-          </form>
-        </Form>
+      <DialogContent>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <TaskFormFields form={form} onFileChange={onFileChange} />
+          <Button type="submit" className="w-full">
+            Sukurti
+          </Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

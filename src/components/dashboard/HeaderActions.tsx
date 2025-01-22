@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { Settings, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -53,36 +53,45 @@ export function HeaderActions() {
     }
   };
 
-  const SettingsButton = () => (
-    <Tooltip>
-      <TooltipTrigger asChild>
+  return (
+    <div className="flex items-center justify-end space-x-6 px-4 sm:px-0">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSettingsClick}
+            className={`flex flex-col items-center min-h-[64px] hover:bg-[#242832] transition-colors ${
+              isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'
+            }`}
+          >
+            <Settings className="h-6 w-6 mb-1" />
+            <span className="text-xs">Nustatymai</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Nustatymai</p>
+        </TooltipContent>
+      </Tooltip>
+
+      <NotificationsPopover>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleSettingsClick}
-          className={`hover:bg-[#242832] transition-colors ${
-            isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'
-          }`}
+          className="flex flex-col items-center min-h-[64px] hover:bg-[#242832]"
         >
-          <Settings className="h-5 w-5" />
+          <Bell className="h-6 w-6 mb-1" />
+          <span className="text-xs">Pranešimai</span>
         </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Nustatymai</p>
-      </TooltipContent>
-    </Tooltip>
-  );
+      </NotificationsPopover>
 
-  return (
-    <div className="flex items-center justify-end space-x-4">
-      <SettingsButton />
-      <NotificationsPopover />
       <Button
         variant="ghost"
         onClick={handleLogout}
-        className="text-[#FF4B6E] hover:text-[#FF3355] hover:bg-[#242832]"
+        className="flex flex-col items-center min-h-[64px] text-[#FF4B6E] hover:text-[#FF3355] hover:bg-[#242832]"
       >
-        Atsijungti
+        <LogOut className="h-6 w-6 mb-1" />
+        <span className="text-xs">Atsijungti</span>
       </Button>
     </div>
   );
