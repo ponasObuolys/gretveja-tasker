@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,27 @@ export const useAuthSession = (): UseAuthSessionResult => {
   const { initializeSession } = useSessionInitialization(setSession, setLoading);
   const { onSignIn, onSignOut, onTokenRefresh } = useAuthStateHandlers(setSession, setLoading);
 
+  const setupRefreshTimer = useCallback((currentSession: Session) => {
+    if (!currentSession?.expires_at) return;
+
+    const expiresAt = new Date(currentSession.expires_at * 1000);
+    const timeUntilExpiry = expiresAt.getTime() - Date.now();
+    const refreshBuffer = 5 * 60 * 1000; // 5 minutes before expiry
+
+    if (timeUntilExpiry <= refreshBuffer) {
+      console.log("Token close to expiry, refreshing now");
+      supabase.auth.refreshSession();
+    } else {
+      const refreshTime = timeUntilExpiry - refreshBuffer;
+      console.log(`Scheduling token refresh in ${refreshTime / 1000} seconds`);
+      
+      setTimeout(() => {
+        console.log("Executing scheduled token refresh");
+        supabase.auth.refreshSession();
+      }, refreshTime);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -32,10 +53,14 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
         if (event === 'SIGNED_IN') {
           onSignIn(currentSession!);
+          setupRefreshTimer(currentSession!);
         } else if (event === 'SIGNED_OUT') {
           onSignOut();
         } else if (event === 'TOKEN_REFRESHED') {
           onTokenRefresh(currentSession);
+          if (currentSession) {
+            setupRefreshTimer(currentSession);
+          }
         }
       }
     );
@@ -47,7 +72,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, setupRefreshTimer]);
 
   return { session, loading };
 };
