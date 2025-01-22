@@ -17,7 +17,6 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormReady, setIsFormReady] = useState(false);
 
-  // Get the current domain for redirect URL
   const redirectUrl = `${window.location.origin}/auth/callback`;
   console.log("Auth redirect URL:", redirectUrl);
 
@@ -128,9 +127,7 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           view="sign_in"
-          showLinks={false}
-          otpType="email"
-          magicLink={false}
+          showLinks={true}
           redirectTo={redirectUrl}
         />
       )}
