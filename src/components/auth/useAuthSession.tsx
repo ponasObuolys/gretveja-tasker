@@ -26,6 +26,16 @@ export const useAuthSession = (): UseAuthSessionResult => {
         
         if (error) {
           console.error("Error getting session:", error);
+          if (error.message.includes('refresh_token_not_found')) {
+            console.log("Invalid refresh token, clearing auth data");
+            await supabase.auth.signOut();
+            if (mounted) {
+              setSession(null);
+              setLoading(false);
+            }
+            return;
+          }
+          
           if (retryCount < maxRetries && mounted) {
             retryCount++;
             console.log(`Retrying session initialization in ${retryDelay}ms`);
