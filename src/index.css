@@ -59,6 +59,13 @@
   textarea {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  /* Enhanced touch interactions */
+  input[type="text"],
+  input[type="search"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
 }
 
 @layer components {
@@ -91,6 +98,14 @@
     @apply w-full p-4 mb-3 rounded-lg;
     @apply touch-manipulation;
     @apply active:scale-[0.98] transition-transform;
+  }
+
+  /* Search bar specific styles */
+  .search-input-touch {
+    @apply touch-manipulation;
+    @apply select-none;
+    @apply active:scale-[0.98];
+    @apply transition-transform duration-200;
   }
 }
 
