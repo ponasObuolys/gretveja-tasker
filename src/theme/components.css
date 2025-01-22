@@ -1,0 +1,56 @@
+@layer components {
+  /* Touch-optimized elements */
+  button, 
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  input[type="text"],
+  input[type="search"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Attachment handling */
+  .attachment-section {
+    @apply flex flex-col gap-4 my-4;
+  }
+
+  .attached-files {
+    @apply grid grid-cols-1 gap-3;
+  }
+
+  .file-item {
+    @apply relative p-4 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors;
+  }
+
+  .delete-file {
+    @apply absolute -top-2 -right-2 p-2 rounded-full bg-destructive hover:bg-destructive/90;
+  }
+
+  /* Modal and task management */
+  .modal-actions {
+    @apply relative;
+  }
+
+  .delete-button {
+    @apply absolute right-12 top-0;
+  }
+
+  .task-card {
+    @apply w-full p-4 mb-3 rounded-lg;
+    @apply touch-manipulation;
+    @apply active:scale-[0.98] transition-transform;
+  }
+
+  .search-input-touch {
+    @apply touch-manipulation;
+    @apply select-none;
+    @apply active:scale-[0.98];
+    @apply transition-transform duration-200;
+  }
+}
