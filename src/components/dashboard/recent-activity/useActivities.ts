@@ -59,22 +59,22 @@ export function useActivities() {
       // Combine and sort all activities
       const allActivities: ActivityType[] = [
         ...(tasks || []).map(task => ({
-          type: 'task',
+          type: 'task' as const,
           data: task,
           date: new Date(task.updated_at),
         })),
         ...(comments || []).map(comment => ({
-          type: 'comment',
+          type: 'comment' as const,
           data: comment,
           date: new Date(comment.created_at),
         })),
         ...(attachments || []).map(attachment => ({
-          type: 'attachment',
+          type: 'attachment' as const,
           data: attachment,
           date: new Date(attachment.created_at),
         })),
         ...(links || []).map(link => ({
-          type: 'link',
+          type: 'link' as const,
           data: link,
           date: new Date(link.created_at),
         })),
