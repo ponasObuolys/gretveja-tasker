@@ -17,6 +17,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormReady, setIsFormReady] = useState(false);
 
+  // Get the current origin for redirect URL
   const redirectUrl = `${window.location.origin}/auth/callback`;
   console.log("Auth redirect URL:", redirectUrl);
 
@@ -59,10 +60,11 @@ const Auth = () => {
       }
     };
 
-    const handleAuthChange = (event: string, session: any) => {
+    const handleAuthChange = async (event: string, session: any) => {
       console.log("Auth state changed:", event, {
         hasSession: !!session,
-        userEmail: session?.user?.email
+        userEmail: session?.user?.email,
+        currentPath: window.location.pathname
       });
       
       if (!mounted) return;
@@ -111,7 +113,7 @@ const Auth = () => {
     return () => {
       mounted = false;
       clearTimeout(redirectTimeout);
-      console.log("Auth component unmounting");
+      console.log("Auth component unmounting, cleaning up subscription");
       subscription.unsubscribe();
     };
   }, [navigate, toast]);

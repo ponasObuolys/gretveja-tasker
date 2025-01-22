@@ -46,7 +46,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
       async (event, currentSession) => {
         console.log("Auth state changed:", event, {
           hasSession: !!currentSession,
-          user: currentSession?.user?.email
+          user: currentSession?.user?.email,
+          currentPath: window.location.pathname
         });
 
         if (!mounted) return;
@@ -56,6 +57,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
           setupRefreshTimer(currentSession!);
         } else if (event === 'SIGNED_OUT') {
           onSignOut();
+          // Clear any lingering auth data
+          localStorage.removeItem('supabase.auth.token');
         } else if (event === 'TOKEN_REFRESHED') {
           onTokenRefresh(currentSession);
           if (currentSession) {
@@ -72,7 +75,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
     };
-  }, [toast, setupRefreshTimer]);
+  }, [toast, setupRefreshTimer, onSignIn, onSignOut, onTokenRefresh, initializeSession]);
 
   return { session, loading };
 };
