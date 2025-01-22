@@ -1,20 +1,10 @@
-/**
- * KanbanTask Component
- * 
- * This component represents a draggable task card in a Kanban board.
- * It handles:
- * - Task display with title, description, and metadata
- * - Drag and drop functionality
- * - Selection mode for bulk actions
- * - Task details modal display
- * - Admin-specific functionality
- */
 import { Draggable } from "@hello-pangea/dnd";
 import { Tables } from "@/integrations/supabase/types";
 import { TaskDetailsModal } from "./TaskDetailsModal";
 import { TaskContent } from "./TaskContent";
 import { useKanbanTask } from "./hooks/useKanbanTask";
 import { DraggableTaskContainer } from "./components/DraggableTaskContainer";
+import { useSwipeable } from "react-swipeable";
 
 interface KanbanTaskProps {
   task: Tables<"tasks"> & {
@@ -45,6 +35,21 @@ export function KanbanTask({
     handleClick
   } = useKanbanTask({ task, isSelectionMode, onSelect });
 
+  const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (!isAdmin) return;
+      // Move task to next status
+      console.log("Swiped left on task:", task.id);
+    },
+    onSwipedRight: () => {
+      if (!isAdmin) return;
+      // Move task to previous status
+      console.log("Swiped right on task:", task.id);
+    },
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: true
+  });
+
   return (
     <>
       <Draggable 
@@ -53,19 +58,21 @@ export function KanbanTask({
         isDragDisabled={isSelectionMode || task.is_commenting}
       >
         {(provided, snapshot) => (
-          <DraggableTaskContainer
-            task={task}
-            provided={provided}
-            isDragging={snapshot.isDragging}
-            onClick={handleClick}
-          >
-            <TaskContent
+          <div {...handlers}>
+            <DraggableTaskContainer
               task={task}
-              isSelectionMode={isSelectionMode}
-              isSelected={isSelected}
-              onSelect={onSelect}
-            />
-          </DraggableTaskContainer>
+              provided={provided}
+              isDragging={snapshot.isDragging}
+              onClick={handleClick}
+            >
+              <TaskContent
+                task={task}
+                isSelectionMode={isSelectionMode}
+                isSelected={isSelected}
+                onSelect={onSelect}
+              />
+            </DraggableTaskContainer>
+          </div>
         )}
       </Draggable>
 

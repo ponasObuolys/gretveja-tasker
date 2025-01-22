@@ -3,8 +3,8 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { HandleBar } from "./HandleBar";
 import { useDashboardLayout } from "./useDashboardLayout";
+import { BottomNav } from "@/components/mobile/BottomNav";
 
-// Lazy load components
 const DashboardSidebar = lazy(() => import("./DashboardSidebar"));
 const DashboardHeader = lazy(() => import("./DashboardHeader"));
 const DashboardContent = lazy(() => import("./DashboardContent"));
@@ -40,7 +40,8 @@ export function DashboardLayout() {
           />
         </Suspense>
 
-        <div className={`relative transition-all duration-300 ease-in-out ${leftSidebarOpen ? 'w-64 min-w-64' : 'w-0'} border-r border-gray-800 max-h-screen overflow-hidden`}>
+        {/* Left sidebar - hidden on mobile */}
+        <div className={`relative transition-all duration-300 ease-in-out hidden lg:block ${leftSidebarOpen ? 'w-64 min-w-64' : 'w-0'} border-r border-gray-800 max-h-screen overflow-hidden`}>
           <HandleBar
             isOpen={leftSidebarOpen}
             onToggle={() => setLeftSidebarOpen(!leftSidebarOpen)}
@@ -53,7 +54,7 @@ export function DashboardLayout() {
           </div>
         </div>
         
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-screen pb-16 lg:pb-0">
           <Suspense fallback={<LoadingSpinner />}>
             <DashboardHeader />
           </Suspense>
@@ -72,7 +73,7 @@ export function DashboardLayout() {
           </Suspense>
         </div>
 
-        <div className={`relative transition-all duration-300 ease-in-out ${rightSidebarOpen ? 'w-80 min-w-80' : 'w-0'} border-l border-gray-800 max-h-screen overflow-hidden`}>
+        <div className={`relative transition-all duration-300 ease-in-out hidden lg:block ${rightSidebarOpen ? 'w-80 min-w-80' : 'w-0'} border-l border-gray-800 max-h-screen overflow-hidden`}>
           <HandleBar
             isOpen={rightSidebarOpen}
             onToggle={() => setRightSidebarOpen(!rightSidebarOpen)}
@@ -84,6 +85,9 @@ export function DashboardLayout() {
             </Suspense>
           </div>
         </div>
+
+        {/* Bottom Navigation - visible only on mobile */}
+        <BottomNav />
       </div>
     </NotificationProvider>
   );
