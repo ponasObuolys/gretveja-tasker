@@ -3,7 +3,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useId } from "react";
 import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
 import { TaskDeleteButton } from "./task-details/TaskDeleteButton";
 import { useTaskDeletion } from "./task-details/TaskDeletionHandler";
@@ -33,6 +33,8 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const titleId = useId();
+  const descriptionId = useId();
 
   const { handleDelete } = useTaskDeletion({
     taskId: task?.id || "",
@@ -110,10 +112,16 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          aria-labelledby={titleId}
+          aria-describedby={descriptionId}
+        >
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="text-xl">{task.title}</DialogTitle>
+              <DialogTitle id={titleId} className="text-xl">
+                {task.title}
+              </DialogTitle>
               <TaskDeleteButton
                 isAdmin={isAdmin}
                 onDelete={() => setIsDeleteDialogOpen(true)}
@@ -121,15 +129,17 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
             </div>
           </DialogHeader>
 
-          <TaskDetailsContent
-            task={task}
-            isAdmin={isAdmin}
-            isUploading={isUploading}
-            onUploadStart={() => setIsUploading(true)}
-            onUploadEnd={() => setIsUploading(false)}
-            handleDeleteFile={handleDeleteFile}
-            handleStatusChange={handleStatusChange}
-          />
+          <div id={descriptionId}>
+            <TaskDetailsContent
+              task={task}
+              isAdmin={isAdmin}
+              isUploading={isUploading}
+              onUploadStart={() => setIsUploading(true)}
+              onUploadEnd={() => setIsUploading(false)}
+              handleDeleteFile={handleDeleteFile}
+              handleStatusChange={handleStatusChange}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
