@@ -6,6 +6,13 @@ export interface TaskStatistics {
   activeTasks: number;
   completedTasks: number;
   successRate: number;
+  overdueRate: number;
+  avgCompletionDays: number;
+  priorityDistribution: {
+    low: number;
+    medium: number;
+    high: number;
+  };
 }
 
 export interface ChartDataPoint {
@@ -13,9 +20,15 @@ export interface ChartDataPoint {
   tasks: number;
 }
 
+export interface PieChartData {
+  name: string;
+  value: number;
+}
+
 export interface StatCardProps {
   title: string;
   value: number | string;
+  trend?: number;
 }
 
 export interface PeriodSelectorProps {

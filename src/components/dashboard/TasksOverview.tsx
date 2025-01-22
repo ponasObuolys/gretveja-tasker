@@ -6,6 +6,8 @@ import { useChartData } from "./tasks-overview/hooks/useChartData";
 import { StatCard } from "./tasks-overview/components/StatCard";
 import { PeriodSelector } from "./tasks-overview/components/PeriodSelector";
 import { TasksChart } from "./tasks-overview/components/TasksChart";
+import { StatusPieChart } from "./tasks-overview/components/StatusPieChart";
+import { PriorityDistribution } from "./tasks-overview/components/PriorityDistribution";
 
 export function TasksOverview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TaskPeriod>("7");
@@ -27,13 +29,40 @@ export function TasksOverview() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard title="Aktyvios" value={statistics.activeTasks} />
-        <StatCard title="Atliktos" value={statistics.completedTasks} />
-        <StatCard title="Sėkmės rodiklis" value={`${statistics.successRate}%`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard 
+          title="Aktyvios" 
+          value={statistics.activeTasks} 
+        />
+        <StatCard 
+          title="Atliktos" 
+          value={statistics.completedTasks} 
+        />
+        <StatCard 
+          title="Sėkmės rodiklis" 
+          value={`${statistics.successRate}%`} 
+        />
+        <StatCard 
+          title="Vėluojančios" 
+          value={`${statistics.overdueRate}%`} 
+        />
       </div>
 
-      <TasksChart data={chartData} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-[#1A1D24] p-4 rounded-lg">
+          <h4 className="text-sm text-gray-400 mb-4">Užduočių būsenos</h4>
+          <StatusPieChart data={tasks} />
+        </div>
+        <div className="bg-[#1A1D24] p-4 rounded-lg">
+          <h4 className="text-sm text-gray-400 mb-4">Prioritetų pasiskirstymas</h4>
+          <PriorityDistribution data={statistics.priorityDistribution} />
+        </div>
+      </div>
+
+      <div className="bg-[#1A1D24] p-4 rounded-lg">
+        <h4 className="text-sm text-gray-400 mb-4">Užduočių tendencijos</h4>
+        <TasksChart data={chartData} />
+      </div>
     </div>
   );
 }
