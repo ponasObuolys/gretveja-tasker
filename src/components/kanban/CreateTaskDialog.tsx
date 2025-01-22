@@ -3,12 +3,16 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { TaskFormFields } from "./task-form/TaskFormFields";
 import { useTaskForm } from "./task-form/useTaskForm";
+import { useState } from "react";
 
 export function CreateTaskDialog() {
-  const { form, onSubmit, onFileChange } = useTaskForm();
+  const [isOpen, setIsOpen] = useState(false);
+  const { form, isSubmitting, selectedFiles, handleFileChange, onSubmit } = useTaskForm(() => {
+    setIsOpen(false);
+  });
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
           size="lg"
@@ -20,8 +24,8 @@ export function CreateTaskDialog() {
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <TaskFormFields form={form} onFileChange={onFileChange} />
-          <Button type="submit" className="w-full">
+          <TaskFormFields form={form} onFileChange={handleFileChange} />
+          <Button type="submit" disabled={isSubmitting} className="w-full">
             Sukurti
           </Button>
         </form>

@@ -74,7 +74,7 @@ export function HeaderActions() {
         </TooltipContent>
       </Tooltip>
 
-      <NotificationsPopover>
+      <NotificationsPopover trigger={
         <Button
           variant="ghost"
           size="icon"
@@ -83,7 +83,7 @@ export function HeaderActions() {
           <Bell className="h-6 w-6 mb-1" />
           <span className="text-xs">Pranešimai</span>
         </Button>
-      </NotificationsPopover>
+      } />
 
       <Button
         variant="ghost"
