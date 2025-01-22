@@ -22,7 +22,7 @@ interface TaskContentProps {
   onSelect?: (taskId: string) => void;
 }
 
-const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTOS"];
+const TERMINAL_STATUSES = ["IVYKDYTOS", "ATMESTA"];
 
 export function TaskContent({
   task,
@@ -38,26 +38,27 @@ export function TaskContent({
     queryKey: ["task-attachments", task.id],
     queryFn: async () => {
       console.log("Fetching attachments for task:", task.id);
-      const { data, error } = await supabase
-        .from("task_attachments")
-        .select("*")
-        .eq("task_id", task.id);
-      
-      if (error) {
-        console.error("Error fetching attachments:", error);
-        toast({
-          title: "Klaida",
-          description: "Nepavyko gauti prisegtų failų",
-          variant: "destructive",
-        });
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from("task_attachments")
+          .select("*")
+          .eq("task_id", task.id);
+        
+        if (error) {
+          console.error("Error fetching attachments:", error);
+          throw error;
+        }
+        
+        console.log("Fetched attachments:", data);
+        return data || [];
+      } catch (error) {
+        console.error("Failed to fetch attachments:", error);
+        return [];
       }
-      
-      console.log("Fetched attachments:", data);
-      return data;
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: false,
+    enabled: !!task.id,
+    initialData: [],
   });
 
   return (
