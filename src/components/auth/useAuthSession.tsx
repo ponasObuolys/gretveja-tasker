@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization";
+import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
 
 interface UseAuthSessionResult {
   session: Session | null;
@@ -13,70 +15,11 @@ export const useAuthSession = (): UseAuthSessionResult => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const { initializeSession } = useSessionInitialization(setSession, setLoading);
+  const { onSignIn, onSignOut, onTokenRefresh } = useAuthStateHandlers(setSession, setLoading);
+
   useEffect(() => {
     let mounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 2000;
-
-    const initializeSession = async () => {
-      try {
-        console.log("Initializing session in useAuthSession");
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error getting session:", error);
-          if (error.message.includes('refresh_token_not_found')) {
-            console.log("Invalid refresh token, clearing auth data");
-            await supabase.auth.signOut();
-            if (mounted) {
-              setSession(null);
-              setLoading(false);
-            }
-            return;
-          }
-          
-          if (retryCount < maxRetries && mounted) {
-            retryCount++;
-            console.log(`Retrying session initialization in ${retryDelay}ms`);
-            setTimeout(initializeSession, retryDelay);
-            return;
-          }
-          
-          toast({
-            title: "Klaida",
-            description: "Nepavyko gauti sesijos. Bandykite dar kartą.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (mounted) {
-          console.log("Setting initial session:", {
-            hasSession: !!currentSession,
-            user: currentSession?.user?.email
-          });
-          setSession(currentSession);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Session initialization error:", error);
-        if (mounted) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Retrying after error in ${retryDelay}ms`);
-            setTimeout(initializeSession, retryDelay);
-          } else {
-            setLoading(false);
-            toast({
-              title: "Klaida",
-              description: "Įvyko klaida. Bandykite dar kartą vėliau.",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
@@ -88,25 +31,16 @@ export const useAuthSession = (): UseAuthSessionResult => {
         if (!mounted) return;
 
         if (event === 'SIGNED_IN') {
-          setSession(currentSession);
-          setLoading(false);
-          toast({
-            title: "Prisijungta",
-            description: "Sėkmingai prisijungėte prie sistemos",
-          });
+          onSignIn(currentSession!);
         } else if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setLoading(false);
-          console.log("User signed out");
+          onSignOut();
         } else if (event === 'TOKEN_REFRESHED') {
-          setSession(currentSession);
-          setLoading(false);
-          console.log("Token refreshed");
+          onTokenRefresh(currentSession);
         }
       }
     );
 
-    initializeSession();
+    initializeSession(mounted);
 
     return () => {
       mounted = false;
