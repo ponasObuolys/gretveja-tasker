@@ -1,4 +1,4 @@
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -73,7 +73,16 @@ export function HeaderActions() {
         </TooltipContent>
       </Tooltip>
 
-      <NotificationsPopover />
+      <NotificationsPopover trigger={
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative hover:bg-[#242832]"
+          aria-label="Atidaryti pranešimus"
+        >
+          <Bell className="h-5 w-5 text-gray-400" />
+        </Button>
+      } />
 
       <Button
         variant="ghost"
