@@ -29,6 +29,7 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
   const [channel, setChannel] = useState<any>(null);
 
   useEffect(() => {
+    console.log("Setting up realtime subscription for comments on task:", taskId);
     const newChannel = supabase
       .channel('task_comments')
       .on(
@@ -49,6 +50,7 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
     setChannel(newChannel);
 
     return () => {
+      console.log("Cleaning up comment subscription");
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -81,17 +83,13 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
     },
   });
 
-  const handleAddComment = async (comment: string, files: File[], links: string[]) => {
-    if (!isAdmin) {
-      toast({
-        title: "Negalima pridėti komentaro",
-        description: "Tik administratoriai gali pridėti komentarus",
-        variant: "destructive",
-      });
-      return;
-    }
+  const addCommentMutation = useMutation({
+    mutationFn: async ({ comment, files, links }: { comment: string, files: File[], links: string[] }) => {
+      console.log("Adding comment:", { comment, files, links });
+      if (!isAdmin) {
+        throw new Error("Only administrators can add comments");
+      }
 
-    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user found");
 
@@ -106,20 +104,26 @@ export function TaskComments({ taskId, isAdmin }: TaskCommentsProps) {
         });
 
       if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+    },
+    onSuccess: () => {
       toast({
         title: "Komentaras pridėtas",
         description: "Komentaras sėkmingai pridėtas",
       });
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+    },
+    onError: (error) => {
       console.error("Error adding comment:", error);
       toast({
         title: "Klaida",
         description: "Nepavyko pridėti komentaro",
         variant: "destructive",
       });
-    }
+    },
+  });
+
+  const handleAddComment = async (comment: string, files: File[], links: string[]) => {
+    await addCommentMutation.mutate({ comment, files, links });
   };
 
   if (isLoading) {
