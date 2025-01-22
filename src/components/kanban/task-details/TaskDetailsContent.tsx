@@ -4,7 +4,8 @@ import { TaskAttachments } from "./TaskAttachments";
 import { TaskAttachmentSection } from "./TaskAttachmentSection";
 import { TaskStatusButtons } from "./TaskStatusButtons";
 import { TaskComments } from "../TaskComments";
-import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface TaskDetailsContentProps {
   task: Tables<"tasks"> & {
@@ -26,6 +27,7 @@ interface TaskDetailsContentProps {
   onUploadEnd: () => void;
   handleDeleteFile: (attachmentId: string) => void;
   handleStatusChange: (status: Tables<"tasks">["status"]) => void;
+  onDelete: () => void;
 }
 
 export function TaskDetailsContent({
@@ -36,6 +38,7 @@ export function TaskDetailsContent({
   onUploadEnd,
   handleDeleteFile,
   handleStatusChange,
+  onDelete,
 }: TaskDetailsContentProps) {
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
@@ -69,6 +72,19 @@ export function TaskDetailsContent({
         currentStatus={task.status}
         onStatusChange={handleStatusChange}
       />
+
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            onClick={onDelete}
+            className="w-full sm:w-auto"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Ištrinti užduotį
+          </Button>
+        </div>
+      )}
 
       <TaskComments taskId={task.id} isAdmin={isAdmin} />
     </div>

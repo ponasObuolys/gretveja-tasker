@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback, useId } from "react";
 import { DeleteTaskDialog } from "./task-details/DeleteTaskDialog";
-import { TaskDeleteButton } from "./task-details/TaskDeleteButton";
 import { useTaskDeletion } from "./task-details/TaskDeletionHandler";
 import { TaskDetailsContent } from "./task-details/TaskDetailsContent";
 
@@ -118,15 +117,9 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
           aria-describedby={descriptionId}
         >
           <DialogHeader>
-            <div className="flex items-start justify-between gap-4">
-              <DialogTitle id={titleId} className="text-xl">
-                {task.title}
-              </DialogTitle>
-              <TaskDeleteButton
-                isAdmin={isAdmin}
-                onDelete={() => setIsDeleteDialogOpen(true)}
-              />
-            </div>
+            <DialogTitle id={titleId} className="text-xl">
+              {task.title}
+            </DialogTitle>
           </DialogHeader>
 
           <div id={descriptionId}>
@@ -138,6 +131,7 @@ export function TaskDetailsModal({ task, isOpen, onClose, isAdmin }: TaskDetails
               onUploadEnd={() => setIsUploading(false)}
               handleDeleteFile={handleDeleteFile}
               handleStatusChange={handleStatusChange}
+              onDelete={() => setIsDeleteDialogOpen(true)}
             />
           </div>
         </DialogContent>
