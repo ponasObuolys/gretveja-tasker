@@ -17,6 +17,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormReady, setIsFormReady] = useState(false);
 
+  // Get the current domain for redirect URL
+  const redirectUrl = `${window.location.origin}/auth/callback`;
+  console.log("Auth redirect URL:", redirectUrl);
+
   useEffect(() => {
     console.log("Auth component mounted");
     let mounted = true;
@@ -127,7 +131,7 @@ const Auth = () => {
           showLinks={false}
           otpType="email"
           magicLink={false}
-          redirectTo={`${window.location.origin}/auth/callback`}
+          redirectTo={redirectUrl}
         />
       )}
     </AuthContainer>
