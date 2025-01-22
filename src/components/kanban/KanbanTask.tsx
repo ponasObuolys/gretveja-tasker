@@ -46,7 +46,7 @@ export function KanbanTask({
       // Move task to previous status
       console.log("Swiped right on task:", task.id);
     },
-    preventDefaultTouchmoveEvent: true,
+    preventScrollOnSwipe: true,
     trackMouse: true
   });
 
