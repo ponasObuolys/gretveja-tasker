@@ -17,14 +17,12 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormReady, setIsFormReady] = useState(false);
 
-  // Get the current origin for redirect URL
   const redirectUrl = `${window.location.origin}/auth/callback`;
   console.log("Auth redirect URL:", redirectUrl);
 
   useEffect(() => {
     console.log("Auth component mounted");
     let mounted = true;
-    let redirectTimeout: NodeJS.Timeout;
 
     const checkSession = async () => {
       try {
@@ -75,7 +73,8 @@ const Auth = () => {
             title: "Sėkmingai prisijungta",
             description: "Nukreipiama į pagrindinį puslapį..."
           });
-          navigate("/");
+          // Use replace instead of push to prevent back navigation
+          navigate("/", { replace: true });
         } catch (error) {
           console.error("Profile fetch error:", error);
           setError("Profilio gavimo klaida");
@@ -85,14 +84,6 @@ const Auth = () => {
         setError(null);
         setIsFormReady(true);
         setIsLoading(false);
-        
-        // Clear any existing auth data
-        localStorage.removeItem('supabase.auth.token');
-        
-        // Ensure we're on the auth page
-        if (window.location.pathname !== '/auth') {
-          navigate('/auth');
-        }
       }
     };
 
@@ -100,19 +91,8 @@ const Auth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Set up fallback redirect
-    redirectTimeout = setTimeout(() => {
-      if (mounted && !isFormReady && !error) {
-        console.log("Fallback: Redirecting to auth page");
-        setIsFormReady(true);
-        setIsLoading(false);
-        navigate('/auth');
-      }
-    }, 5000);
-
     return () => {
       mounted = false;
-      clearTimeout(redirectTimeout);
       console.log("Auth component unmounting, cleaning up subscription");
       subscription.unsubscribe();
     };

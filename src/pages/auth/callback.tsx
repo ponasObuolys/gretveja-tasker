@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,15 +7,23 @@ import { AuthContainer } from "@/components/auth/AuthContainer";
 const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const navigationAttempted = useRef(false);
+  const processingAuth = useRef(false);
 
   useEffect(() => {
     console.log("Processing auth callback");
     let mounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    let fallbackTimeout: NodeJS.Timeout;
+    let navigationTimeout: NodeJS.Timeout;
 
     const handleAuthCallback = async () => {
+      // Prevent multiple simultaneous auth processing attempts
+      if (processingAuth.current) {
+        console.log("Auth processing already in progress");
+        return;
+      }
+
+      processingAuth.current = true;
+
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -25,33 +33,36 @@ const AuthCallback = () => {
         }
 
         if (!session) {
-          console.log(`No session found in callback, attempt ${retryCount + 1} of ${maxRetries}`);
+          console.log("No session found in callback, attempting one retry");
+          // Single retry after 1 second
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { session: retrySession }, error: retryError } = 
+            await supabase.auth.getSession();
           
-          if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(handleAuthCallback, 1000);
-            return;
+          if (retryError || !retrySession) {
+            throw new Error("Nepavyko prisijungti po pakartotinio bandymo");
           }
-          
-          throw new Error("Nepavyko prisijungti. Bandykite dar kartą.");
         }
 
-        console.log("Auth callback successful, session found for:", session.user.email);
-        
-        if (mounted) {
-          console.log("Redirecting to home after successful auth");
-          navigate("/");
+        if (mounted && !navigationAttempted.current) {
+          console.log("Auth callback successful, navigating to home");
+          navigationAttempted.current = true;
+          navigate("/", { replace: true });
         }
       } catch (error) {
         console.error("Auth callback error:", error);
         if (mounted) {
           setError(error instanceof Error ? error.message : "Prisijungimo klaida");
-          // Set up fallback redirect to auth page
-          fallbackTimeout = setTimeout(() => {
-            console.log("Fallback: Redirecting to auth page after error");
-            navigate("/auth");
+          // Navigate to auth page after error
+          navigationTimeout = setTimeout(() => {
+            if (mounted && !navigationAttempted.current) {
+              navigationAttempted.current = true;
+              navigate("/auth", { replace: true });
+            }
           }, 2000);
         }
+      } finally {
+        processingAuth.current = false;
       }
     };
 
@@ -59,8 +70,8 @@ const AuthCallback = () => {
 
     return () => {
       mounted = false;
-      if (fallbackTimeout) {
-        clearTimeout(fallbackTimeout);
+      if (navigationTimeout) {
+        clearTimeout(navigationTimeout);
       }
     };
   }, [navigate]);

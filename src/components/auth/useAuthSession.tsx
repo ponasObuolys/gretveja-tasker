@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization";
 import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
+import { debounce } from "lodash";
 
 interface UseAuthSessionResult {
   session: Session | null;
@@ -25,10 +26,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
     const timeUntilExpiry = expiresAt.getTime() - Date.now();
     const refreshBuffer = 5 * 60 * 1000; // 5 minutes before expiry
 
-    if (timeUntilExpiry <= refreshBuffer) {
-      console.log("Token close to expiry, refreshing now");
-      supabase.auth.refreshSession();
-    } else {
+    // Only schedule refresh if expiry is more than buffer time away
+    if (timeUntilExpiry > refreshBuffer) {
       const refreshTime = timeUntilExpiry - refreshBuffer;
       console.log(`Scheduling token refresh in ${refreshTime / 1000} seconds`);
       
@@ -38,6 +37,27 @@ export const useAuthSession = (): UseAuthSessionResult => {
       }, refreshTime);
     }
   }, []);
+
+  // Debounce auth state changes to prevent rapid updates
+  const debouncedAuthStateChange = useCallback(
+    debounce(async (event: string, currentSession: Session | null) => {
+      console.log("Debounced auth state change:", event, {
+        hasSession: !!currentSession,
+        user: currentSession?.user?.email
+      });
+
+      if (event === 'SIGNED_IN') {
+        onSignIn(currentSession!);
+        setupRefreshTimer(currentSession!);
+      } else if (event === 'SIGNED_OUT') {
+        onSignOut();
+      } else if (event === 'TOKEN_REFRESHED' && currentSession) {
+        onTokenRefresh(currentSession);
+        setupRefreshTimer(currentSession);
+      }
+    }, 300),
+    [onSignIn, onSignOut, onTokenRefresh, setupRefreshTimer]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -51,20 +71,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
         });
 
         if (!mounted) return;
-
-        if (event === 'SIGNED_IN') {
-          onSignIn(currentSession!);
-          setupRefreshTimer(currentSession!);
-        } else if (event === 'SIGNED_OUT') {
-          onSignOut();
-          // Clear any lingering auth data
-          localStorage.removeItem('supabase.auth.token');
-        } else if (event === 'TOKEN_REFRESHED') {
-          onTokenRefresh(currentSession);
-          if (currentSession) {
-            setupRefreshTimer(currentSession);
-          }
-        }
+        debouncedAuthStateChange(event, currentSession);
       }
     );
 
@@ -72,10 +79,11 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
     return () => {
       mounted = false;
+      debouncedAuthStateChange.cancel();
       console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
     };
-  }, [toast, setupRefreshTimer, onSignIn, onSignOut, onTokenRefresh, initializeSession]);
+  }, [toast, debouncedAuthStateChange, initializeSession]);
 
   return { session, loading };
 };
