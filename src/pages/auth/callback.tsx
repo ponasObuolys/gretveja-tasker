@@ -13,6 +13,7 @@ const AuthCallback = () => {
     let mounted = true;
     let retryCount = 0;
     const maxRetries = 3;
+    let fallbackTimeout: NodeJS.Timeout;
 
     const handleAuthCallback = async () => {
       try {
@@ -28,7 +29,6 @@ const AuthCallback = () => {
           
           if (retryCount < maxRetries) {
             retryCount++;
-            // Wait for 1 second before retrying
             setTimeout(handleAuthCallback, 1000);
             return;
           }
@@ -46,7 +46,11 @@ const AuthCallback = () => {
         console.error("Auth callback error:", error);
         if (mounted) {
           setError(error instanceof Error ? error.message : "Prisijungimo klaida");
-          setTimeout(() => mounted && navigate("/auth"), 2000);
+          // Set up fallback redirect to auth page
+          fallbackTimeout = setTimeout(() => {
+            console.log("Fallback: Redirecting to auth page after error");
+            navigate("/auth");
+          }, 2000);
         }
       }
     };
@@ -55,6 +59,9 @@ const AuthCallback = () => {
 
     return () => {
       mounted = false;
+      if (fallbackTimeout) {
+        clearTimeout(fallbackTimeout);
+      }
     };
   }, [navigate]);
 

@@ -23,6 +23,7 @@ const Auth = () => {
   useEffect(() => {
     console.log("Auth component mounted");
     let mounted = true;
+    let redirectTimeout: NodeJS.Timeout;
 
     const checkSession = async () => {
       try {
@@ -58,9 +59,7 @@ const Auth = () => {
       }
     };
 
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const handleAuthChange = (event: string, session: any) => {
       console.log("Auth state changed:", event, {
         hasSession: !!session,
         userEmail: session?.user?.email
@@ -70,31 +69,48 @@ const Auth = () => {
 
       if (event === "SIGNED_IN" && session?.user) {
         try {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single();
-
-          if (profileError) throw profileError;
-
           toast({
             title: "Sėkmingai prisijungta",
-            description: profile?.role === "ADMIN" ? 
-              "Sveiki sugrįžę, administratoriau!" : 
-              "Sveiki sugrįžę!"
+            description: "Nukreipiama į pagrindinį puslapį..."
           });
-
           navigate("/");
         } catch (error) {
           console.error("Profile fetch error:", error);
           setError("Profilio gavimo klaida");
         }
+      } else if (event === "SIGNED_OUT") {
+        console.log("User signed out, ensuring clean state");
+        setError(null);
+        setIsFormReady(true);
+        setIsLoading(false);
+        
+        // Clear any existing auth data
+        localStorage.removeItem('supabase.auth.token');
+        
+        // Ensure we're on the auth page
+        if (window.location.pathname !== '/auth') {
+          navigate('/auth');
+        }
       }
-    });
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    // Set up fallback redirect
+    redirectTimeout = setTimeout(() => {
+      if (mounted && !isFormReady && !error) {
+        console.log("Fallback: Redirecting to auth page");
+        setIsFormReady(true);
+        setIsLoading(false);
+        navigate('/auth');
+      }
+    }, 5000);
 
     return () => {
       mounted = false;
+      clearTimeout(redirectTimeout);
       console.log("Auth component unmounting");
       subscription.unsubscribe();
     };
