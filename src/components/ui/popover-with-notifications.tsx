@@ -16,7 +16,11 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
-export function NotificationsPopover() {
+interface NotificationsPopoverProps {
+  trigger: React.ReactNode;
+}
+
+export function NotificationsPopover({ trigger }: NotificationsPopoverProps) {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
@@ -39,19 +43,7 @@ export function NotificationsPopover() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative hover:bg-[#242832]"
-          aria-label="Atidaryti pranešimus"
-        >
-          <Bell className="h-5 w-5 text-gray-400" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
-        </Button>
+        {trigger}
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between border-b border-gray-700 p-3">

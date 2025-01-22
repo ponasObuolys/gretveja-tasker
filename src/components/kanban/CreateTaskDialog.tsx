@@ -23,7 +23,7 @@ export function CreateTaskDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit((data) => onSubmit(data))} className="space-y-4">
           <TaskFormFields form={form} onFileChange={handleFileChange} />
           <Button type="submit" disabled={isSubmitting} className="w-full">
             Sukurti

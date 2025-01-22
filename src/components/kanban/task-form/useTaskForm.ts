@@ -143,6 +143,6 @@ export function useTaskForm(onSuccess: () => void) {
     isSubmitting,
     selectedFiles,
     handleFileChange,
-    onSubmit: form.handleSubmit(onSubmit),
+    onSubmit,
   };
 }
