@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -49,6 +49,10 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { session, loading } = useAuthSession();
+
+  useEffect(() => {
+    console.log("Auth session state changed:", { session, loading });
+  }, [session, loading]);
 
   if (loading) {
     return <LoadingScreen />;
