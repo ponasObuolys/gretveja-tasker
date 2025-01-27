@@ -24,12 +24,15 @@ if (import.meta.env.PROD) {
 
 // Add error handling for resource loading
 const handleResourceError = (e: ErrorEvent) => {
-  if (e.target instanceof HTMLImageElement || 
-      e.target instanceof HTMLScriptElement || 
-      e.target instanceof HTMLLinkElement) {
-    console.warn(`Resource loading error: ${e.target.src || e.target.href}`);
-    e.preventDefault();
+  const target = e.target as HTMLElement;
+  if (target instanceof HTMLImageElement) {
+    console.warn(`Image loading error: ${target.src}`);
+  } else if (target instanceof HTMLScriptElement) {
+    console.warn(`Script loading error: ${target.src}`);
+  } else if (target instanceof HTMLLinkElement) {
+    console.warn(`Link loading error: ${target.href}`);
   }
+  e.preventDefault();
 };
 
 window.addEventListener('error', handleResourceError);
@@ -45,9 +48,9 @@ const queryClient = new QueryClient({
 });
 
 function AppRoutes() {
-  const { session, isLoading } = useAuthSession();
+  const { session, loading } = useAuthSession();
 
-  if (isLoading) {
+  if (loading) {
     return <LoadingScreen />;
   }
 
