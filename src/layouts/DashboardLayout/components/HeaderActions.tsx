@@ -4,7 +4,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,25 +55,23 @@ export function HeaderActions() {
 
   return (
     <div className="flex items-center justify-end space-x-4">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSettingsClick}
-              className={`hover:bg-[#242832] transition-colors ${
-                isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'
-              }`}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Nustatymai</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSettingsClick}
+            className={`hover:bg-[#242832] transition-colors ${
+              isSettingsActive ? 'bg-[#242832] text-white' : 'text-gray-400'
+            }`}
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Nustatymai</p>
+        </TooltipContent>
+      </Tooltip>
 
       <NotificationsPopover trigger={
         <Button

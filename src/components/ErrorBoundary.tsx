@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import * as Sentry from "@sentry/react";
 import { ErrorMessage } from "./ErrorMessage";
-import { useToast } from "@/hooks/use-toast";
-import { debounce } from "lodash";
 
 interface Props {
   children: ReactNode;
@@ -18,10 +16,6 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  private retryCount: number = 0;
-  private maxRetries: number = 3;
-  private retryDelay: number = 2000;
-
   public state: State = {
     hasError: false,
     error: null,
@@ -43,26 +37,19 @@ export class ErrorBoundary extends Component<Props, State> {
       Sentry.captureException(error, {
         extra: {
           componentStack: errorInfo.componentStack,
-          retryCount: this.retryCount
         },
       });
     }
   }
 
-  private handleReset = debounce(async () => {
+  private handleReset = () => {
     if (this.state.isTokenError) {
       window.location.href = '/auth';
     } else {
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        console.log(`Retrying component mount, attempt ${this.retryCount}`);
-        this.setState({ hasError: false, error: null, isTokenError: false });
-      } else {
-        console.error("Max retries reached, redirecting to home");
-        window.location.href = '/';
-      }
+      this.setState({ hasError: false, error: null, isTokenError: false });
+      window.location.href = '/';
     }
-  }, 300);
+  };
 
   public render() {
     if (this.state.hasError) {
@@ -83,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 : this.state.error?.message || 'Bandykite dar kartą vėliau'}
             </p>
             <Button onClick={this.handleReset} variant="default">
-              {this.state.isTokenError ? 'Prisijungti' : 'Bandyti dar kartą'}
+              {this.state.isTokenError ? 'Prisijungti' : 'Grįžti į pradžią'}
             </Button>
           </div>
         </div>

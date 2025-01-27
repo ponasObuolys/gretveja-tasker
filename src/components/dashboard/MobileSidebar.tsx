@@ -2,7 +2,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { DashboardSidebar } from "./DashboardSidebar";
-import { useEffect } from "react";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -10,12 +9,6 @@ interface MobileSidebarProps {
 }
 
 export function MobileSidebar({ isOpen, onOpenChange }: MobileSidebarProps) {
-  useEffect(() => {
-    return () => {
-      onOpenChange(false);
-    };
-  }, [onOpenChange]);
-
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">

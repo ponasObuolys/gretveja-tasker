@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,45 +39,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { toast } = useToast();
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    const { error } = await supabase
-      .from("notifications")
-      .update({ unread: false })
-      .eq("id", notificationId);
-
-    if (error) {
-      console.error("Error marking notification as read:", error);
-      return;
-    }
-
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, unread: false }
-          : notification
-      )
-    );
-  }, []);
-
-  const markAllAsRead = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ unread: false })
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Error marking all notifications as read:", error);
-      return;
-    }
-
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, unread: false }))
-    );
-  }, []);
-
   useEffect(() => {
     const fetchNotifications = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -109,6 +70,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     fetchNotifications();
 
+    // Subscribe to new notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -120,7 +82,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         },
         (payload) => {
           console.log('New notification:', payload);
-          fetchNotifications();
+          fetchNotifications(); // Refresh notifications
           toast({
             title: "Naujas pranešimas",
             description: "Gavote naują pranešimą",
@@ -133,6 +95,45 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       supabase.removeChannel(channel);
     };
   }, [toast]);
+
+  const markAsRead = async (notificationId: string) => {
+    const { error } = await supabase
+      .from("notifications")
+      .update({ unread: false })
+      .eq("id", notificationId);
+
+    if (error) {
+      console.error("Error marking notification as read:", error);
+      return;
+    }
+
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === notificationId
+          ? { ...notification, unread: false }
+          : notification
+      )
+    );
+  };
+
+  const markAllAsRead = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ unread: false })
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error marking all notifications as read:", error);
+      return;
+    }
+
+    setNotifications(prev =>
+      prev.map(notification => ({ ...notification, unread: false }))
+    );
+  };
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
