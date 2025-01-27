@@ -7,16 +7,20 @@ export const createQueryClient = () => new QueryClient({
       gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
       retry: (failureCount, error) => {
         if (error instanceof Error) {
+          // Don't retry more than 3 times for auth or fetch errors
           if (error.message.includes('Auth') || error.message.includes('Failed to fetch')) {
             return failureCount < 3;
           }
+          // For rate limiting (429), don't retry
           if (error.message.includes('429')) {
-            // Implement exponential backoff for rate limiting
-            const delay = Math.min(1000 * Math.pow(2, failureCount), 30000);
-            return new Promise(resolve => setTimeout(resolve, delay));
+            return false;
           }
         }
         return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => {
+        // Implement exponential backoff
+        return Math.min(1000 * Math.pow(2, attemptIndex), 30000);
       },
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
