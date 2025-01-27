@@ -188,7 +188,7 @@ export function TaskDetailsContent({
 
       {isAdmin && (
         <div className="flex justify-end">
-          <TaskDeleteButton onDelete={onDelete} />
+          <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
         </div>
       )}
 
