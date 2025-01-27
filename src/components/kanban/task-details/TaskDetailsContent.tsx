@@ -15,6 +15,7 @@ import { TaskDeleteButton } from "./TaskDeleteButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Pencil, Check, X } from "lucide-react";
 
 interface TaskDetailsContentProps {
   task: Tables<"tasks"> & {
@@ -49,7 +50,7 @@ export function TaskDetailsContent({
   handleStatusChange,
   onDelete,
 }: TaskDetailsContentProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'deadline' | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,14 +64,12 @@ export function TaskDetailsContent({
     },
   });
 
-  const onSubmit = async (values: any) => {
+  const handleFieldUpdate = async (field: string, value: any) => {
     try {
       const { error } = await supabase
         .from("tasks")
         .update({
-          title: values.title,
-          description: values.description,
-          deadline: values.deadline,
+          [field]: value,
           updated_at: new Date().toISOString(),
         })
         .eq("id", task.id);
@@ -83,7 +82,7 @@ export function TaskDetailsContent({
       });
 
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      setIsEditing(false);
+      setEditingField(null);
     } catch (error) {
       console.error("Error updating task:", error);
       toast({
@@ -94,91 +93,100 @@ export function TaskDetailsContent({
     }
   };
 
+  const renderEditableField = (
+    field: 'title' | 'description' | 'deadline',
+    label: string,
+    currentValue: string,
+    inputType: 'text' | 'textarea' | 'datetime-local'
+  ) => {
+    const isEditing = editingField === field;
+
+    if (!isEditing) {
+      return (
+        <div className="flex items-start justify-between group">
+          <div className="space-y-1 flex-1">
+            <div className="font-medium text-sm">{label}</div>
+            <div className="text-sm text-gray-200">
+              {field === 'deadline' && currentValue 
+                ? format(new Date(currentValue), "yyyy-MM-dd HH:mm")
+                : currentValue || "Nėra"}
+            </div>
+          </div>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingField(field)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Form {...form}>
+        <form className="space-y-2">
+          <FormField
+            control={form.control}
+            name={field}
+            render={({ field: formField }) => (
+              <FormItem>
+                <FormLabel>{label}</FormLabel>
+                <div className="flex gap-2">
+                  <FormControl>
+                    {inputType === 'textarea' ? (
+                      <Textarea {...formField} className="resize-none" />
+                    ) : (
+                      <Input type={inputType} {...formField} />
+                    )}
+                  </FormControl>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleFieldUpdate(field, formField.value)}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingField(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
+    );
+  };
+
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-      {isAdmin && !isEditing && (
-        <Button onClick={() => setIsEditing(true)} className="w-full">
-          Redaguoti užduotį
-        </Button>
-      )}
+      <div className="space-y-4">
+        {renderEditableField('title', 'Pavadinimas', task.title, 'text')}
+        {renderEditableField('description', 'Aprašymas', task.description || '', 'textarea')}
+        {renderEditableField('deadline', 'Terminas', task.deadline || '', 'datetime-local')}
+      </div>
 
-      {isEditing && isAdmin ? (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pavadinimas</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Aprašymas</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="deadline"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Terminas</FormLabel>
-                  <FormControl>
-                    <Input type="datetime-local" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
-                Išsaugoti
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditing(false)}
-                className="flex-1"
-              >
-                Atšaukti
-              </Button>
-            </div>
-          </form>
-        </Form>
-      ) : (
-        <>
-          <div className="space-y-2">
-            <h3 className="font-medium">Aprašymas</h3>
-            <p className="text-sm text-gray-200 whitespace-pre-wrap">
-              {task.description || "Nėra aprašymo"}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
-            <TaskAttachments
-              isAdmin={isAdmin}
-              attachments={task.task_attachments}
-              onDeleteFile={handleDeleteFile}
-              taskId={task.id}
-            />
-          </div>
-        </>
-      )}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
+        <TaskAttachments
+          isAdmin={isAdmin}
+          attachments={task.task_attachments}
+          onDeleteFile={handleDeleteFile}
+          taskId={task.id}
+        />
+      </div>
 
       <TaskStatusButtons
         isAdmin={isAdmin}
