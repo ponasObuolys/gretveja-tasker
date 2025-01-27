@@ -17,15 +17,10 @@ const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./pages/auth/callback"));
 
-// Preload critical resources
-const preloadResources = () => {
-  // Preload main layout
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'script';
-  link.href = '/layouts/DashboardLayout.js';
-  document.head.appendChild(link);
-};
+// Cache durations and cleanup intervals
+const CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const MESSAGE_BATCH_SIZE = 10;
+const MESSAGE_BATCH_INTERVAL = 2000; // 2 seconds
 
 // Initialize Sentry as early as possible
 if (import.meta.env.PROD) {
@@ -44,6 +39,14 @@ const AppRoutes = () => {
     const maxRetries = 3;
     const retryDelay = 2000;
     
+    // Cleanup interval for old messages and cache
+    const cleanupInterval = setInterval(() => {
+      if (mounted) {
+        console.log("Running periodic cleanup");
+        queryClient.clear();
+      }
+    }, CLEANUP_INTERVAL);
+
     const retryAuth = async () => {
       if (!mounted) {
         console.log("Component unmounted, stopping auth initialization");
@@ -75,14 +78,14 @@ const AppRoutes = () => {
       }
     };
 
-    // Start auth initialization and resource preloading
+    // Start auth initialization
     retryAuth();
-    preloadResources();
 
     const { data: { subscription } } = setupAuthListener();
 
     return () => {
       mounted = false;
+      clearInterval(cleanupInterval);
       console.log("Cleaning up auth subscription in AppRoutes");
       subscription.unsubscribe();
     };
