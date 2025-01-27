@@ -12,10 +12,20 @@ import { initSentry } from "./utils/sentry";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
 
-// Lazy load components
+// Lazy load components with preload
 const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./pages/auth/callback"));
+
+// Preload critical resources
+const preloadResources = () => {
+  // Preload main layout
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'script';
+  link.href = '/layouts/DashboardLayout.js';
+  document.head.appendChild(link);
+};
 
 // Initialize Sentry as early as possible
 if (import.meta.env.PROD) {
@@ -65,7 +75,9 @@ const AppRoutes = () => {
       }
     };
 
+    // Start auth initialization and resource preloading
     retryAuth();
+    preloadResources();
 
     const { data: { subscription } } = setupAuthListener();
 

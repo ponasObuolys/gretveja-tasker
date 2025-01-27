@@ -8,14 +8,21 @@ export const createQueryClient = () => new QueryClient({
       retry: (failureCount, error) => {
         if (error instanceof Error) {
           if (error.message.includes('Auth') || error.message.includes('Failed to fetch')) {
-            console.error('Not retrying query due to:', error.message);
-            return false;
+            return failureCount < 3;
+          }
+          if (error.message.includes('429')) {
+            // Implement exponential backoff for rate limiting
+            const delay = Math.min(1000 * Math.pow(2, failureCount), 30000);
+            return new Promise(resolve => setTimeout(resolve, delay));
           }
         }
-        return failureCount < 3;
+        return failureCount < 2;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: false,
     },
   },
 });

@@ -6,15 +6,20 @@ import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization"
 import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
 import { debounce } from "lodash";
 
-interface UseAuthSessionResult {
-  session: Session | null;
-  loading: boolean;
-}
+// Singleton for auth subscription
+let globalAuthSubscription: { unsubscribe: () => void } | null = null;
+let subscriberCount = 0;
 
+// Session cache
 const SESSION_CACHE_KEY = 'auth_session_cache';
 const DEBOUNCE_DELAY = 300;
 const RETRY_DELAY = 2000;
 const MAX_RETRIES = 3;
+
+interface UseAuthSessionResult {
+  session: Session | null;
+  loading: boolean;
+}
 
 export const useAuthSession = (): UseAuthSessionResult => {
   const [session, setSession] = useState<Session | null>(() => {
@@ -79,6 +84,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
   useEffect(() => {
     mountedRef.current = true;
+    subscriberCount++;
 
     const initAuth = async () => {
       try {
@@ -92,19 +98,28 @@ export const useAuthSession = (): UseAuthSessionResult => {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mountedRef.current) return;
-        debouncedAuthStateChange(event, currentSession);
-      }
-    );
+    // Use singleton pattern for auth subscription
+    if (!globalAuthSubscription) {
+      globalAuthSubscription = supabase.auth.onAuthStateChange(
+        async (event, currentSession) => {
+          if (!mountedRef.current) return;
+          debouncedAuthStateChange(event, currentSession);
+        }
+      ).data.subscription;
+    }
 
     initAuth();
 
     return () => {
       mountedRef.current = false;
       debouncedAuthStateChange.cancel();
-      subscription.unsubscribe();
+      
+      subscriberCount--;
+      if (subscriberCount === 0 && globalAuthSubscription) {
+        console.log("Cleaning up global auth subscription");
+        globalAuthSubscription.unsubscribe();
+        globalAuthSubscription = null;
+      }
     };
   }, [debouncedAuthStateChange, initializeSession]);
 
