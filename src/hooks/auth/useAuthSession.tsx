@@ -6,15 +6,14 @@ import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization"
 import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
 import { debounce } from "lodash";
 
+// Session cache
+const SESSION_CACHE_KEY = 'auth_session_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const DEBOUNCE_DELAY = 300;
+
 // Singleton for auth subscription
 let globalAuthSubscription: { unsubscribe: () => void } | null = null;
 let subscriberCount = 0;
-
-// Session cache
-const SESSION_CACHE_KEY = 'auth_session_cache';
-const DEBOUNCE_DELAY = 300;
-const RETRY_DELAY = 2000;
-const MAX_RETRIES = 3;
 
 interface UseAuthSessionResult {
   session: Session | null;
@@ -27,7 +26,6 @@ export const useAuthSession = (): UseAuthSessionResult => {
     return cached ? JSON.parse(cached) : null;
   });
   const [loading, setLoading] = useState(true);
-  const retryCount = useRef(0);
   const mountedRef = useRef(true);
   const { toast } = useToast();
 
@@ -43,11 +41,8 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
     if (timeUntilExpiry > refreshBuffer) {
       const refreshTime = timeUntilExpiry - refreshBuffer;
-      console.log(`Scheduling token refresh in ${refreshTime / 1000} seconds`);
-      
       const timeoutId = setTimeout(() => {
         if (mountedRef.current) {
-          console.log("Executing scheduled token refresh");
           supabase.auth.refreshSession();
         }
       }, refreshTime);
@@ -60,11 +55,6 @@ export const useAuthSession = (): UseAuthSessionResult => {
   const debouncedAuthStateChange = useCallback(
     debounce(async (event: string, currentSession: Session | null) => {
       if (!mountedRef.current) return;
-
-      console.log("Debounced auth state change:", event, {
-        hasSession: !!currentSession,
-        user: currentSession?.user?.email
-      });
 
       if (event === 'SIGNED_IN') {
         onSignIn(currentSession!);
@@ -87,15 +77,19 @@ export const useAuthSession = (): UseAuthSessionResult => {
     subscriberCount++;
 
     const initAuth = async () => {
-      try {
-        await initializeSession(true);
-      } catch (error) {
-        console.error("Session initialization error:", error);
-        if (retryCount.current < MAX_RETRIES && mountedRef.current) {
-          retryCount.current++;
-          setTimeout(initAuth, RETRY_DELAY);
+      const cachedSession = localStorage.getItem(SESSION_CACHE_KEY);
+      const cacheTimestamp = localStorage.getItem(SESSION_CACHE_KEY + '_timestamp');
+      
+      if (cachedSession && cacheTimestamp) {
+        const cacheAge = Date.now() - Number(cacheTimestamp);
+        if (cacheAge < CACHE_DURATION) {
+          setSession(JSON.parse(cachedSession));
+          setLoading(false);
+          return;
         }
       }
+
+      await initializeSession(true);
     };
 
     // Use singleton pattern for auth subscription
@@ -116,7 +110,6 @@ export const useAuthSession = (): UseAuthSessionResult => {
       
       subscriberCount--;
       if (subscriberCount === 0 && globalAuthSubscription) {
-        console.log("Cleaning up global auth subscription");
         globalAuthSubscription.unsubscribe();
         globalAuthSubscription = null;
       }

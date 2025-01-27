@@ -23,13 +23,11 @@ export const useAuthStateHandlers = (
       });
     },
     onSignOut: () => {
-      console.log("User signed out, clearing session");
       setSession(null);
       setLoading(false);
     },
     onTokenRefresh: async (currentSession: Session | null) => {
       if (!currentSession) {
-        console.log("No session after token refresh");
         setSession(null);
         setLoading(false);
         toast({
@@ -38,7 +36,6 @@ export const useAuthStateHandlers = (
           variant: "destructive",
         });
       } else {
-        console.log("Session refreshed successfully");
         setSession(currentSession);
         setLoading(false);
       }
