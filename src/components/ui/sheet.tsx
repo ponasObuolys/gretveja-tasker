@@ -48,12 +48,14 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-  VariantProps<typeof sheetVariants> { }
+  VariantProps<typeof sheetVariants> {
+    open?: boolean;
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => {
+>(({ side = "right", className, children, open, ...props }, ref) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -61,7 +63,7 @@ const SheetContent = React.forwardRef<
     if (!content) return;
 
     const handleTransitionEnd = () => {
-      if (props.open) {
+      if (open) {
         content.style.opacity = "1";
       }
     };
@@ -70,7 +72,7 @@ const SheetContent = React.forwardRef<
     return () => {
       content.removeEventListener("transitionend", handleTransitionEnd);
     };
-  }, [props.open]);
+  }, [open]);
 
   return (
     <SheetPortal>
