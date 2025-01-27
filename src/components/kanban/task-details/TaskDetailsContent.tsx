@@ -12,6 +12,7 @@ import { TaskComments } from "../TaskComments";
 import { TaskAttachments } from "./TaskAttachments";
 import { TaskStatusButtons } from "./TaskStatusButtons";
 import { TaskDeleteButton } from "./TaskDeleteButton";
+import { TaskLinks } from "@/components/TaskLinks";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -172,35 +173,39 @@ export function TaskDetailsContent({
 
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Sukūrė: {task.created_by_profile?.email} • {format(new Date(task.created_at), "yyyy-MM-dd HH:mm")}
+        </div>
+        {isAdmin && (
+          <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
+        )}
+      </div>
+
       <div className="space-y-4">
         {renderEditableField('title', 'Pavadinimas', task.title, 'text')}
         {renderEditableField('description', 'Aprašymas', task.description || '', 'textarea')}
         {renderEditableField('deadline', 'Terminas', task.deadline || '', 'datetime-local')}
       </div>
 
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium">Prisegti dokumentai:</h3>
+      <div className="space-y-6">
         <TaskAttachments
           isAdmin={isAdmin}
           attachments={task.task_attachments}
           onDeleteFile={handleDeleteFile}
           taskId={task.id}
         />
+
+        <TaskLinks taskId={task.id} isAdmin={isAdmin} />
+
+        <TaskStatusButtons
+          isAdmin={isAdmin}
+          currentStatus={task.status}
+          onStatusChange={handleStatusChange}
+        />
+
+        <TaskComments taskId={task.id} isAdmin={isAdmin} />
       </div>
-
-      <TaskStatusButtons
-        isAdmin={isAdmin}
-        currentStatus={task.status}
-        onStatusChange={handleStatusChange}
-      />
-
-      {isAdmin && (
-        <div className="flex justify-end">
-          <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
-        </div>
-      )}
-
-      <TaskComments taskId={task.id} isAdmin={isAdmin} />
     </div>
   );
 }
