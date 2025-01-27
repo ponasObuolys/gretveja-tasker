@@ -19,4 +19,22 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['date-fns', 'lodash'],
+          ui: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip'
+          ]
+        }
+      }
+    },
+    sourcemap: true,
+    chunkSizeWarningLimit: 1000
+  }
 }));
