@@ -10,7 +10,8 @@ const SESSION_CACHE = {
   refreshPromise: null,
   lastAuthEvent: null,
   lastEventTimestamp: 0,
-  isInitialized: false // Track global initialization state
+  isInitialized: false, // Track global initialization state
+  initializationPromise: null // Track ongoing initialization
 };
 
 const EVENT_DEBOUNCE_TIME = 2000; // 2 seconds threshold for duplicate events
@@ -74,43 +75,54 @@ const useAuthSession = () => {
   }, 2000, { leading: true, trailing: false });
 
   const initialize = async () => {
+    // Return existing initialization promise if one exists
+    if (SESSION_CACHE.initializationPromise) {
+      return SESSION_CACHE.initializationPromise;
+    }
+
     // Skip if already initialized globally or component is unmounted
-    if (!mountedRef.current || initializingRef.current || SESSION_CACHE.isInitialized) {
+    if (!mountedRef.current || SESSION_CACHE.isInitialized) {
       console.log("[Auth] Skipping initialization - already initialized or unmounted");
       return;
     }
     
     try {
       initializingRef.current = true;
-      console.log("[Auth] Starting session initialization");
+      
+      // Create a new initialization promise
+      SESSION_CACHE.initializationPromise = (async () => {
+        console.log("[Auth] Starting session initialization");
 
-      if (isSessionValid()) {
-        console.log("[Auth] Using cached session");
-        if (mountedRef.current) {
-          setSession(SESSION_CACHE.data);
-          SESSION_CACHE.isInitialized = true;
+        if (isSessionValid()) {
+          console.log("[Auth] Using cached session");
+          if (mountedRef.current) {
+            setSession(SESSION_CACHE.data);
+            SESSION_CACHE.isInitialized = true;
+          }
+          return;
         }
-        return;
-      }
 
-      console.log("[Auth] Fetching new session");
-      const { data: { session: newSession } } = await supabase.auth.getSession();
+        console.log("[Auth] Fetching new session");
+        const { data: { session: newSession } } = await supabase.auth.getSession();
 
-      if (!mountedRef.current) return;
+        if (!mountedRef.current) return;
 
-      if (newSession) {
-        console.log("[Auth] New session cached");
-        SESSION_CACHE.data = newSession;
-        SESSION_CACHE.timestamp = Date.now();
-        SESSION_CACHE.isInitialized = true;
-        setSession(newSession);
-      } else {
-        console.log("[Auth] No active session");
-        SESSION_CACHE.data = null;
-        SESSION_CACHE.timestamp = 0;
-        SESSION_CACHE.isInitialized = true;
-        setSession(null);
-      }
+        if (newSession) {
+          console.log("[Auth] New session cached");
+          SESSION_CACHE.data = newSession;
+          SESSION_CACHE.timestamp = Date.now();
+          SESSION_CACHE.isInitialized = true;
+          setSession(newSession);
+        } else {
+          console.log("[Auth] No active session");
+          SESSION_CACHE.data = null;
+          SESSION_CACHE.timestamp = 0;
+          SESSION_CACHE.isInitialized = true;
+          setSession(null);
+        }
+      })();
+
+      await SESSION_CACHE.initializationPromise;
     } catch (error) {
       console.error('[Auth] Session initialization error:', error);
       if (mountedRef.current) {
@@ -121,6 +133,7 @@ const useAuthSession = () => {
       }
     } finally {
       initializingRef.current = false;
+      SESSION_CACHE.initializationPromise = null;
     }
   };
 
@@ -137,6 +150,7 @@ const useAuthSession = () => {
         SESSION_CACHE.timestamp = 0;
         SESSION_CACHE.refreshPromise = null;
         SESSION_CACHE.isInitialized = false;
+        SESSION_CACHE.initializationPromise = null;
         if (mountedRef.current) {
           setSession(null);
         }
