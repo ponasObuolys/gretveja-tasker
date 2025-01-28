@@ -7,8 +7,12 @@ const SESSION_CACHE = {
   data: null,
   timestamp: 0,
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
-  refreshPromise: null
+  refreshPromise: null,
+  lastAuthEvent: null,
+  lastEventTimestamp: 0
 };
+
+const EVENT_DEBOUNCE_TIME = 2000; // 2 seconds threshold for duplicate events
 
 const useAuthSession = () => {
   const [session, setSession] = useState(null);
@@ -21,6 +25,23 @@ const useAuthSession = () => {
       SESSION_CACHE.data &&
       Date.now() - SESSION_CACHE.timestamp < SESSION_CACHE.CACHE_DURATION
     );
+  };
+
+  const shouldProcessAuthEvent = (event, currentSession) => {
+    const now = Date.now();
+    const eventKey = `${event}-${currentSession?.user?.id || 'no-user'}`;
+    
+    if (
+      SESSION_CACHE.lastAuthEvent === eventKey &&
+      now - SESSION_CACHE.lastEventTimestamp < EVENT_DEBOUNCE_TIME
+    ) {
+      console.log(`[Auth] Skipping duplicate ${event} event`);
+      return false;
+    }
+
+    SESSION_CACHE.lastAuthEvent = eventKey;
+    SESSION_CACHE.lastEventTimestamp = now;
+    return true;
   };
 
   // Debounced token refresh function
@@ -49,7 +70,7 @@ const useAuthSession = () => {
     } finally {
       SESSION_CACHE.refreshPromise = null;
     }
-  }, 1000, { leading: true, trailing: false }); // Only execute first call within 1 second
+  }, 2000, { leading: true, trailing: false }); // Increased debounce time to 2 seconds
 
   const initialize = async () => {
     if (!mountedRef.current || initializingRef.current) return;
@@ -97,21 +118,29 @@ const useAuthSession = () => {
     mountedRef.current = true;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || !shouldProcessAuthEvent(event, changedSession)) return;
       
-      console.log("[Auth] State changed:", event);
+      console.log("[Auth] Processing state change:", event);
+      
       if (event === 'SIGNED_OUT') {
         SESSION_CACHE.data = null;
         SESSION_CACHE.timestamp = 0;
         SESSION_CACHE.refreshPromise = null;
+        if (mountedRef.current) {
+          setSession(null);
+        }
       } else if (event === 'TOKEN_REFRESHED' && changedSession) {
-        // Update cache with the refreshed session
         SESSION_CACHE.data = changedSession;
         SESSION_CACHE.timestamp = Date.now();
-      }
-      
-      if (mountedRef.current) {
-        setSession(changedSession);
+        if (mountedRef.current) {
+          setSession(changedSession);
+        }
+      } else if (changedSession) {
+        SESSION_CACHE.data = changedSession;
+        SESSION_CACHE.timestamp = Date.now();
+        if (mountedRef.current) {
+          setSession(changedSession);
+        }
       }
     });
 
