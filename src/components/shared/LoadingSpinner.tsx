@@ -1,6 +1,8 @@
-import { memo, useEffect, useRef, useCallback } from 'react';
+import { memo, useEffect, useRef, useCallback, useState } from 'react';
 import { useResizeObserver } from '@/utils/resizeObserver';
 import { cn } from '@/lib/utils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { featureDetector, safeRequestAnimationFrame, safeCancelAnimationFrame } from '@/utils/featureDetection';
 
 interface LoadingSpinnerProps {
   className?: string;
@@ -14,14 +16,15 @@ const sizeClasses = {
   lg: 'w-12 h-12',
 };
 
-export const LoadingSpinner = memo(function LoadingSpinner({
+const SpinnerContent = memo(function SpinnerContent({
   className,
   size = 'md',
-  fullscreen = false,
-}: LoadingSpinnerProps) {
+}: Omit<LoadingSpinnerProps, 'fullscreen'>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const mountedRef = useRef(true);
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasResizeObserver] = useState(() => featureDetector.hasResizeObserver());
 
   const handleResize = useCallback((entries: ResizeObserverEntry[]) => {
     if (!mountedRef.current || !svgRef.current) return;
@@ -29,7 +32,9 @@ export const LoadingSpinner = memo(function LoadingSpinner({
     const entry = entries[0];
     if (entry) {
       const { width, height } = entry.contentRect;
-      requestAnimationFrame(() => {
+      if (width === 0 || height === 0) return; // Skip invalid dimensions
+      
+      safeRequestAnimationFrame(() => {
         if (mountedRef.current && svgRef.current) {
           svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
         }
@@ -37,31 +42,62 @@ export const LoadingSpinner = memo(function LoadingSpinner({
     }
   }, []);
 
-  useResizeObserver(handleResize, containerRef.current);
+  const handleManualResize = useCallback(() => {
+    if (!mountedRef.current || !svgRef.current || !containerRef.current) return;
+    
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    if (width === 0 || height === 0) return;
+
+    safeRequestAnimationFrame(() => {
+      if (mountedRef.current && svgRef.current) {
+        svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
-    const svg = svgRef.current;
-    
-    if (!svg) return;
+    let animationHandle: number;
+    let resizeObserver: ResizeObserver | null = null;
 
-    // Ensure SVG is properly mounted before animation
-    const animationFrame = requestAnimationFrame(() => {
-      if (mountedRef.current && svg) {
-        svg.style.opacity = '1';
-      }
+    // Ensure component is mounted before starting animations
+    Promise.resolve().then(() => {
+      if (!mountedRef.current) return;
+
+      animationHandle = safeRequestAnimationFrame(() => {
+        if (mountedRef.current) {
+          setIsVisible(true);
+          
+          // Set up manual resize handling if ResizeObserver is not available
+          if (!hasResizeObserver) {
+            window.addEventListener('resize', handleManualResize);
+            handleManualResize();
+          }
+        }
+      });
     });
 
     return () => {
       mountedRef.current = false;
-      cancelAnimationFrame(animationFrame);
-      if (svg && svg.parentNode) {
-        svg.style.opacity = '0';
+      if (animationHandle) {
+        safeCancelAnimationFrame(animationHandle);
       }
+      if (!hasResizeObserver) {
+        window.removeEventListener('resize', handleManualResize);
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      setIsVisible(false);
     };
-  }, []);
+  }, [hasResizeObserver, handleManualResize]);
 
-  const spinnerContent = (
+  // Only use ResizeObserver if it's available
+  if (hasResizeObserver) {
+    useResizeObserver(handleResize, containerRef.current);
+  }
+
+  return (
     <div
       ref={containerRef}
       className={cn(
@@ -72,7 +108,10 @@ export const LoadingSpinner = memo(function LoadingSpinner({
     >
       <svg
         ref={svgRef}
-        className="animate-spin opacity-0 transition-opacity duration-200"
+        className={cn(
+          'transition-opacity duration-200',
+          isVisible ? 'opacity-100 animate-spin' : 'opacity-0'
+        )}
         style={{ 
           width: '100%',
           height: '100%',
@@ -81,6 +120,7 @@ export const LoadingSpinner = memo(function LoadingSpinner({
         fill="none"
         viewBox="0 0 24 24"
         aria-label="Loading"
+        data-testid="loading-spinner"
       >
         <circle
           className="opacity-25"
@@ -98,18 +138,30 @@ export const LoadingSpinner = memo(function LoadingSpinner({
       </svg>
     </div>
   );
+});
 
-  if (fullscreen) {
+export const LoadingSpinner = memo(function LoadingSpinner(props: LoadingSpinnerProps) {
+  const content = (
+    <ErrorBoundary>
+      <SpinnerContent 
+        className={props.className}
+        size={props.size}
+      />
+    </ErrorBoundary>
+  );
+
+  if (props.fullscreen) {
     return (
       <div 
         className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
         role="alert"
         aria-busy="true"
+        data-testid="fullscreen-spinner"
       >
-        {spinnerContent}
+        {content}
       </div>
     );
   }
 
-  return spinnerContent;
+  return content;
 });
