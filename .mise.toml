@@ -1,2 +1,2 @@
 [tools]
-core:bun = "1.2.0" 
+bun = "1.2.0"
