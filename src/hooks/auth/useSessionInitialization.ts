@@ -1,7 +1,8 @@
+import { useCallback } from 'react';
 import { SESSION_CACHE, isSessionValid, updateSessionCache } from './useSessionCache';
 import { supabase } from '@/integrations/supabase/client';
 
-export const initializeSession = async (
+const initializeSession = async (
   mounted: boolean,
   setSession: (session: any) => void,
 ) => {
@@ -49,4 +50,21 @@ export const initializeSession = async (
   } finally {
     SESSION_CACHE.initializationPromise = null;
   }
+};
+
+export const useSessionInitialization = (
+  setSession: (session: any) => void,
+  setLoading: (loading: boolean) => void
+) => {
+  return useCallback(
+    (mounted: boolean) => {
+      setLoading(true);
+      initializeSession(mounted, setSession).finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+    },
+    [setSession, setLoading]
+  );
 };
