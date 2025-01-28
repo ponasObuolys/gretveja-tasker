@@ -96,7 +96,6 @@ export function TaskDetailsContent({
 
   const renderEditableField = (
     field: 'title' | 'description' | 'deadline',
-    label: string,
     currentValue: string,
     inputType: 'text' | 'textarea' | 'datetime-local'
   ) => {
@@ -104,25 +103,30 @@ export function TaskDetailsContent({
 
     if (!isEditing) {
       return (
-        <div className="flex items-start justify-between group">
-          <div className="space-y-1 flex-1">
-            <div className="font-medium text-sm">{label}</div>
-            <div className="text-sm text-gray-200">
-              {field === 'deadline' && currentValue 
-                ? format(new Date(currentValue), "yyyy-MM-dd HH:mm")
-                : currentValue || "Nėra"}
+        <div className="group">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {field === 'title' ? (
+                <h3 className="text-lg font-medium">{currentValue}</h3>
+              ) : field === 'description' ? (
+                <p className="text-sm text-gray-200 whitespace-pre-wrap">{currentValue || "Nėra aprašymo"}</p>
+              ) : (
+                <div className="text-sm text-gray-200">
+                  {currentValue ? format(new Date(currentValue), "yyyy-MM-dd HH:mm") : "Nėra termino"}
+                </div>
+              )}
             </div>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingField(field)}
+                className="opacity-80 hover:opacity-100 transition-opacity"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-          {isAdmin && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setEditingField(field)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       );
     }
@@ -135,11 +139,10 @@ export function TaskDetailsContent({
             name={field}
             render={({ field: formField }) => (
               <FormItem>
-                <FormLabel>{label}</FormLabel>
                 <div className="flex gap-2">
                   <FormControl>
                     {inputType === 'textarea' ? (
-                      <Textarea {...formField} className="resize-none" />
+                      <Textarea {...formField} className="resize-none h-20" />
                     ) : (
                       <Input type={inputType} {...formField} />
                     )}
@@ -169,7 +172,7 @@ export function TaskDetailsContent({
         </form>
       </Form>
     );
-  };
+  }
 
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
@@ -178,14 +181,28 @@ export function TaskDetailsContent({
           Sukūrė: {task.created_by_profile?.email} • {format(new Date(task.created_at), "yyyy-MM-dd HH:mm")}
         </div>
         {isAdmin && (
-          <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
+          <div className="flex gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingField('title')}
+              className="opacity-80 hover:opacity-100 transition-opacity"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
+          </div>
         )}
       </div>
 
       <div className="space-y-4">
-        {renderEditableField('title', 'Pavadinimas', task.title, 'text')}
-        {renderEditableField('description', 'Aprašymas', task.description || '', 'textarea')}
-        {renderEditableField('deadline', 'Terminas', task.deadline || '', 'datetime-local')}
+        {renderEditableField('title', task.title, 'text')}
+        {renderEditableField('description', task.description || '', 'textarea')}
+        {task.deadline && (
+          <div className="text-sm text-muted-foreground">
+            Terminas: {format(new Date(task.deadline), "yyyy-MM-dd HH:mm")}
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">

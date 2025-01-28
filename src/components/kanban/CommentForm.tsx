@@ -26,11 +26,12 @@ export function CommentForm({ isAdmin, onSubmit }: CommentFormProps) {
   if (!isAdmin) return null;
 
   return (
-    <div className="space-y-4 mt-4">
+    <div className="flex gap-3">
       <Textarea
         placeholder="Rašyti komentarą..."
         value={comment}
         onChange={(e) => setComment(e.target.value)}
+        className="resize-none h-20"
       />
       <SubmitButton
         isUploading={isUploading}
