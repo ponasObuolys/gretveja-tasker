@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useCallback } from 'react';
 import { useResizeObserver } from '@/utils/resizeObserver';
 import { cn } from '@/lib/utils';
 
@@ -21,26 +21,40 @@ export const LoadingSpinner = memo(function LoadingSpinner({
 }: LoadingSpinnerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const mountedRef = useRef(true);
 
-  useResizeObserver((entries) => {
+  const handleResize = useCallback((entries: ResizeObserverEntry[]) => {
+    if (!mountedRef.current || !svgRef.current) return;
+    
     const entry = entries[0];
-    if (entry && svgRef.current) {
+    if (entry) {
       const { width, height } = entry.contentRect;
-      svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      requestAnimationFrame(() => {
+        if (mountedRef.current && svgRef.current) {
+          svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        }
+      });
     }
-  }, containerRef.current);
+  }, []);
+
+  useResizeObserver(handleResize, containerRef.current);
 
   useEffect(() => {
+    mountedRef.current = true;
     const svg = svgRef.current;
+    
     if (!svg) return;
 
     // Ensure SVG is properly mounted before animation
-    const timeoutId = setTimeout(() => {
-      svg.style.opacity = '1';
-    }, 0);
+    const animationFrame = requestAnimationFrame(() => {
+      if (mountedRef.current && svg) {
+        svg.style.opacity = '1';
+      }
+    });
 
     return () => {
-      clearTimeout(timeoutId);
+      mountedRef.current = false;
+      cancelAnimationFrame(animationFrame);
       if (svg && svg.parentNode) {
         svg.style.opacity = '0';
       }
@@ -66,6 +80,7 @@ export const LoadingSpinner = memo(function LoadingSpinner({
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
+        aria-label="Loading"
       >
         <circle
           className="opacity-25"
@@ -86,7 +101,11 @@ export const LoadingSpinner = memo(function LoadingSpinner({
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+        role="alert"
+        aria-busy="true"
+      >
         {spinnerContent}
       </div>
     );
