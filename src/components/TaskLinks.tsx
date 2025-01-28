@@ -18,7 +18,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
   const [newUrl, setNewUrl] = useState('');
   const { toast } = useToast();
   
-  // Use useQuery to handle session state
+  // Separate session query
   const { data: sessionData } = useQuery({
     queryKey: ['auth-session'],
     queryFn: async () => {
@@ -27,6 +27,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
     },
   });
 
+  // Task links query - no longer dependent on auth
   const { data: links = [], refetch } = useQuery({
     queryKey: ['task-links', taskId],
     queryFn: async () => {
@@ -36,7 +37,10 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
         .eq('task_id', taskId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching links:', error);
+        return [];
+      }
       return data as TaskLink[];
     },
   });
@@ -109,6 +113,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Nuorodos:</h4>
       
+      {/* Only show add form for admins who are authenticated */}
       {isAdmin && sessionData?.session && (
         <form onSubmit={handleAddLink} className="flex gap-2">
           <Input

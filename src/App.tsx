@@ -76,6 +76,21 @@ const AppRoutes = () => {
     };
   }, [initializeAuth, setupAuthListener]);
 
+  useEffect(() => {
+    const subscriptions = new Set();
+    
+    const addSubscription = (subscription) => {
+      subscriptions.add(subscription);
+    };
+
+    const cleanupSubscriptions = () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+      subscriptions.clear();
+    };
+    
+    return cleanupSubscriptions;
+  }, []);
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
