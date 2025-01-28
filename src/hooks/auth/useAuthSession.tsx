@@ -6,9 +6,34 @@ import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization"
 import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
 import { debounce } from "lodash";
 
-// Global cache to prevent multiple initializations
-let cachedSession: Session | null = null;
-let globalInitializationPromise: Promise<void> | null = null;
+// Enhanced session cache with expiry
+const SESSION_CACHE_KEY = 'auth_session_cache';
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+
+interface CachedSessionData {
+  session: Session | null;
+  timestamp: number;
+}
+
+const getSessionFromCache = (): Session | null => {
+  const cached = localStorage.getItem(SESSION_CACHE_KEY);
+  if (!cached) return null;
+  
+  const { session, timestamp } = JSON.parse(cached) as CachedSessionData;
+  if (Date.now() - timestamp > CACHE_EXPIRY_TIME) {
+    localStorage.removeItem(SESSION_CACHE_KEY);
+    return null;
+  }
+  return session;
+};
+
+const setSessionToCache = (session: Session | null) => {
+  const cacheData: CachedSessionData = {
+    session,
+    timestamp: Date.now()
+  };
+  localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(cacheData));
+};
 
 interface UseAuthSessionResult {
   session: Session | null;
@@ -16,16 +41,17 @@ interface UseAuthSessionResult {
 }
 
 export const useAuthSession = (): UseAuthSessionResult => {
-  const [session, setSession] = useState<Session | null>(cachedSession);
-  const [loading, setLoading] = useState(!cachedSession);
+  const [session, setSession] = useState<Session | null>(() => getSessionFromCache());
+  const [loading, setLoading] = useState(!getSessionFromCache());
   const { toast } = useToast();
   const mountedRef = useRef(true);
+  const lastAuthEventRef = useRef<string | null>(null);
 
   const { initializeSession } = useSessionInitialization(
     (newSession) => {
       if (mountedRef.current) {
         setSession(newSession);
-        cachedSession = newSession;
+        setSessionToCache(newSession);
       }
     },
     (loadingState) => {
@@ -39,7 +65,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
     (newSession) => {
       if (mountedRef.current) {
         setSession(newSession);
-        cachedSession = newSession;
+        setSessionToCache(newSession);
       }
     },
     setLoading
@@ -66,10 +92,20 @@ export const useAuthSession = (): UseAuthSessionResult => {
     return null;
   }, []);
 
+  // Memoized session setter to reduce re-renders
+  const updateSession = useCallback((newSession: Session | null) => {
+    if (mountedRef.current) {
+      setSession(newSession);
+      setSessionToCache(newSession);
+    }
+  }, []);
+
+  // Optimized debounced auth state change handler
   const debouncedAuthStateChange = useCallback(
     debounce(async (event: string, currentSession: Session | null) => {
-      if (!mountedRef.current) return;
-
+      if (!mountedRef.current || event === lastAuthEventRef.current) return;
+      
+      lastAuthEventRef.current = event;
       console.log("[Auth] Processing state change:", event, {
         hasSession: !!currentSession,
         user: currentSession?.user?.email
@@ -80,12 +116,12 @@ export const useAuthSession = (): UseAuthSessionResult => {
         setupRefreshTimer(currentSession!);
       } else if (event === 'SIGNED_OUT') {
         onSignOut();
-        cachedSession = null;
+        localStorage.removeItem(SESSION_CACHE_KEY);
       } else if (event === 'TOKEN_REFRESHED' && currentSession) {
         onTokenRefresh(currentSession);
         setupRefreshTimer(currentSession);
       }
-    }, 500),
+    }, 1000), // Increased debounce time to 1 second
     [onSignIn, onSignOut, onTokenRefresh, setupRefreshTimer]
   );
 
@@ -96,21 +132,15 @@ export const useAuthSession = (): UseAuthSessionResult => {
     const initialize = async () => {
       if (!mountedRef.current) return;
 
-      if (!globalInitializationPromise) {
+      if (!getSessionFromCache()) {
         console.log("[Auth] Starting new session initialization");
-        globalInitializationPromise = initializeSession(true);
+        await initializeSession(true);
       } else {
-        console.log("[Auth] Using existing initialization promise");
+        console.log("[Auth] Using existing session");
       }
 
-      try {
-        await globalInitializationPromise;
-        if (mountedRef.current && session) {
-          refreshTimer = setupRefreshTimer(session);
-        }
-      } catch (error) {
-        console.error("[Auth] Initialization error:", error);
-        globalInitializationPromise = null;
+      if (mountedRef.current && session) {
+        refreshTimer = setupRefreshTimer(session);
       }
     };
 
