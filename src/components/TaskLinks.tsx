@@ -17,7 +17,15 @@ interface TaskLink {
 export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolean }) {
   const [newUrl, setNewUrl] = useState('');
   const { toast } = useToast();
-  const { data: session } = supabase.auth.getSession();
+  
+  // Use useQuery to handle session state
+  const { data: sessionData } = useQuery({
+    queryKey: ['auth-session'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      return data;
+    },
+  });
 
   const { data: links = [], refetch } = useQuery({
     queryKey: ['task-links', taskId],
@@ -85,7 +93,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
 
   const handleAddLink = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session?.user) {
+    if (!sessionData?.session) {
       toast({
         title: 'Prisijungimas būtinas',
         description: 'Turite būti prisijungę, kad galėtumėte pridėti nuorodas',
@@ -101,7 +109,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Nuorodos:</h4>
       
-      {isAdmin && session?.user && (
+      {isAdmin && sessionData?.session && (
         <form onSubmit={handleAddLink} className="flex gap-2">
           <Input
             type="url"
