@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Link, Trash2 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 
 interface TaskLink {
   id: string;
@@ -18,7 +17,7 @@ interface TaskLink {
 export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolean }) {
   const [newUrl, setNewUrl] = useState('');
   const { toast } = useToast();
-  const { data: session } = useSession();
+  const { data: session } = supabase.auth.getSession();
 
   const { data: links = [], refetch } = useQuery({
     queryKey: ['task-links', taskId],

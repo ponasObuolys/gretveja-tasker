@@ -1,6 +1,20 @@
 import { TaskLinks } from './TaskLinks';
+import { Tables } from "@/integrations/supabase/types";
 
-function TaskDetailsContent({ task }: { task: Task }) {
+interface TaskDetailsContentProps {
+  task: Tables<"tasks"> & {
+    created_by_profile?: {
+      email: string | null;
+    } | null;
+  };
+}
+
+function TaskDetailsContent({ task }: TaskDetailsContentProps) {
+  const handleDelete = async () => {
+    // Implementation will be added when delete functionality is requested
+    console.log("Delete task:", task.id);
+  };
+
   return (
     <div className="task-details-content">
       <div className="task-header">
@@ -14,18 +28,16 @@ function TaskDetailsContent({ task }: { task: Task }) {
       </div>
       
       <div className="task-metadata">
-        <span>Sukūrė: {task.created_by}</span>
+        <span>Sukūrė: {task.created_by_profile?.email}</span>
         <span>Sukurta: {new Date(task.created_at).toLocaleDateString('lt-LT')}</span>
       </div>
 
       <div className="task-body">
-        <TaskDescription task={task} />
-        <TaskAttachments taskId={task.id} />
-        <TaskLinks taskId={task.id} />
-        <TaskComments taskId={task.id} />
+        <p className="task-description">{task.description}</p>
+        <TaskLinks taskId={task.id} isAdmin={true} />
       </div>
     </div>
   );
 }
 
-export default TaskDetailsContent; 
+export default TaskDetailsContent;
