@@ -3,6 +3,10 @@ import { useAuthStateMachine, withAuthStateTracking } from './useAuthStateMachin
 import { useSessionPersistence } from './useSessionPersistence';
 import * as Sentry from '@sentry/react';
 
+const MAX_INIT_RETRIES = 3;
+const INIT_RETRY_DELAY = 1000;
+let initRetries = 0;
+
 export const useAuthInitialization = () => {
   const authState = useAuthStateMachine();
   const { getStoredSession, refreshToken, clearSession } = useSessionPersistence();
@@ -38,12 +42,14 @@ export const useAuthInitialization = () => {
       );
     } catch (error) {
       console.error('Auth initialization failed:', error);
-      if (import.meta.env.PROD) {
-        Sentry.captureException(error, {
-          tags: { type: 'auth_initialization_failed' },
-        });
+      if (initRetries < MAX_INIT_RETRIES) {
+        initRetries++;
+        console.log(`Retrying initialization (attempt ${initRetries}/${MAX_INIT_RETRIES})`);
+        setTimeout(initialize, INIT_RETRY_DELAY);
+      } else {
+        console.log('Max initialization retries reached');
+        clearSession();
       }
-      clearSession();
     } finally {
       authState.releaseInitLock();
     }
@@ -64,6 +70,7 @@ export const useAuthInitialization = () => {
 
     return () => {
       mounted = false;
+      // Clear any auth subscriptions here
     };
   }, [initialize, authState.state]);
 
