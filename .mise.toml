@@ -1,2 +1,3 @@
 [tools]
 core:bun = "1.2.0" 
+npm run build
