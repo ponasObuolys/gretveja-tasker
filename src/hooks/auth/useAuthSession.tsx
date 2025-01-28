@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -6,21 +6,47 @@ import { useSessionInitialization } from "@/hooks/auth/useSessionInitialization"
 import { useAuthStateHandlers } from "@/hooks/auth/useAuthStateHandlers";
 import { debounce } from "lodash";
 
+// Global cache to prevent multiple initializations
+let cachedSession: Session | null = null;
+let globalInitializationPromise: Promise<void> | null = null;
+
 interface UseAuthSessionResult {
   session: Session | null;
   loading: boolean;
 }
 
 export const useAuthSession = (): UseAuthSessionResult => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(cachedSession);
+  const [loading, setLoading] = useState(!cachedSession);
   const { toast } = useToast();
+  const mountedRef = useRef(true);
 
-  const { initializeSession } = useSessionInitialization(setSession, setLoading);
-  const { onSignIn, onSignOut, onTokenRefresh } = useAuthStateHandlers(setSession, setLoading);
+  const { initializeSession } = useSessionInitialization(
+    (newSession) => {
+      if (mountedRef.current) {
+        setSession(newSession);
+        cachedSession = newSession;
+      }
+    },
+    (loadingState) => {
+      if (mountedRef.current) {
+        setLoading(loadingState);
+      }
+    }
+  );
+
+  const { onSignIn, onSignOut, onTokenRefresh } = useAuthStateHandlers(
+    (newSession) => {
+      if (mountedRef.current) {
+        setSession(newSession);
+        cachedSession = newSession;
+      }
+    },
+    setLoading
+  );
 
   const setupRefreshTimer = useCallback((currentSession: Session) => {
-    if (!currentSession?.expires_at) return;
+    if (!currentSession?.expires_at) return null;
 
     const expiresAt = new Date(currentSession.expires_at * 1000);
     const timeUntilExpiry = expiresAt.getTime() - Date.now();
@@ -28,20 +54,23 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
     if (timeUntilExpiry > refreshBuffer) {
       const refreshTime = timeUntilExpiry - refreshBuffer;
-      console.log(`Scheduling token refresh in ${refreshTime / 1000} seconds`);
+      console.log(`[Auth] Scheduling token refresh in ${Math.floor(refreshTime / 1000)}s`);
       
       return setTimeout(() => {
-        console.log("Executing scheduled token refresh");
-        supabase.auth.refreshSession();
+        if (mountedRef.current) {
+          console.log("[Auth] Executing scheduled token refresh");
+          supabase.auth.refreshSession();
+        }
       }, refreshTime);
     }
     return null;
   }, []);
 
-  // Debounce auth state changes with a longer delay
   const debouncedAuthStateChange = useCallback(
     debounce(async (event: string, currentSession: Session | null) => {
-      console.log("Processing auth state change:", event, {
+      if (!mountedRef.current) return;
+
+      console.log("[Auth] Processing state change:", event, {
         hasSession: !!currentSession,
         user: currentSession?.user?.email
       });
@@ -51,36 +80,48 @@ export const useAuthSession = (): UseAuthSessionResult => {
         setupRefreshTimer(currentSession!);
       } else if (event === 'SIGNED_OUT') {
         onSignOut();
+        cachedSession = null;
       } else if (event === 'TOKEN_REFRESHED' && currentSession) {
         onTokenRefresh(currentSession);
         setupRefreshTimer(currentSession);
       }
-    }, 500), // Increased debounce delay to 500ms
+    }, 500),
     [onSignIn, onSignOut, onTokenRefresh, setupRefreshTimer]
   );
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     let refreshTimer: NodeJS.Timeout | null = null;
 
     const initialize = async () => {
-      if (!mounted) return;
-      await initializeSession(mounted);
-      
-      if (mounted && session) {
-        refreshTimer = setupRefreshTimer(session);
+      if (!mountedRef.current) return;
+
+      if (!globalInitializationPromise) {
+        console.log("[Auth] Starting new session initialization");
+        globalInitializationPromise = initializeSession(true);
+      } else {
+        console.log("[Auth] Using existing initialization promise");
+      }
+
+      try {
+        await globalInitializationPromise;
+        if (mountedRef.current && session) {
+          refreshTimer = setupRefreshTimer(session);
+        }
+      } catch (error) {
+        console.error("[Auth] Initialization error:", error);
+        globalInitializationPromise = null;
       }
     };
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
-        console.log("Auth state changed:", event, {
+        console.log("[Auth] State changed:", event, {
           hasSession: !!currentSession,
           user: currentSession?.user?.email,
-          currentPath: window.location.pathname
+          path: window.location.pathname
         });
 
         debouncedAuthStateChange(event, currentSession);
@@ -89,15 +130,14 @@ export const useAuthSession = (): UseAuthSessionResult => {
 
     initialize();
 
-    // Cleanup function
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       debouncedAuthStateChange.cancel();
       if (refreshTimer) clearTimeout(refreshTimer);
-      console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
+      console.log("[Auth] Cleaned up subscription and timers");
     };
-  }, [toast, debouncedAuthStateChange, initializeSession, session, setupRefreshTimer]);
+  }, [debouncedAuthStateChange, initializeSession, session, setupRefreshTimer]);
 
   return { session, loading };
 };
