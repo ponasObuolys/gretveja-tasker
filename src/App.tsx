@@ -11,6 +11,9 @@ import { useAuthManagement } from "./hooks/useAuthManagement";
 import { initSentry } from "./utils/sentry";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
+import { initializeConnectionStateListeners } from "./utils/connectionState";
+import { useConnectionState } from "./utils/connectionState";
+import { Alert } from "./components/ui/alert";
 
 // Lazy load components
 const DashboardLayout = lazy(() => import("./layouts/DashboardLayout"));
@@ -23,6 +26,18 @@ if (import.meta.env.PROD) {
 }
 
 const queryClient = createQueryClient();
+
+const ConnectionAlert = () => {
+  const { isOnline, isReconnecting } = useConnectionState();
+
+  if (isOnline) return null;
+
+  return (
+    <Alert variant="destructive" className="fixed bottom-4 right-4 z-50 max-w-md">
+      {isReconnecting ? 'Bandoma prisijungti iš naujo...' : 'Nėra interneto ryšio'}
+    </Alert>
+  );
+};
 
 const AppRoutes = () => {
   const { initializeAuth, setupAuthListener } = useAuthManagement({ queryClient });
@@ -77,18 +92,8 @@ const AppRoutes = () => {
   }, [initializeAuth, setupAuthListener]);
 
   useEffect(() => {
-    const subscriptions = new Set();
-    
-    const addSubscription = (subscription) => {
-      subscriptions.add(subscription);
-    };
-
-    const cleanupSubscriptions = () => {
-      subscriptions.forEach(sub => sub.unsubscribe());
-      subscriptions.clear();
-    };
-    
-    return cleanupSubscriptions;
+    const cleanup = initializeConnectionStateListeners();
+    return () => cleanup();
   }, []);
 
   return (
@@ -116,6 +121,7 @@ const App = () => (
         <TooltipProvider delayDuration={0}>
           <Toaster />
           <Sonner />
+          <ConnectionAlert />
           <AppRoutes />
         </TooltipProvider>
       </QueryClientProvider>
