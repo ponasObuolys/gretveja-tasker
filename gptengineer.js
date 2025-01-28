@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { debounce } from 'lodash';
 
 // Global session cache with expiry
 const SESSION_CACHE = {
   data: null,
   timestamp: 0,
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+  refreshPromise: null
 };
 
 const useAuthSession = () => {
@@ -20,6 +22,34 @@ const useAuthSession = () => {
       Date.now() - SESSION_CACHE.timestamp < SESSION_CACHE.CACHE_DURATION
     );
   };
+
+  // Debounced token refresh function
+  const debouncedRefreshToken = debounce(async () => {
+    if (SESSION_CACHE.refreshPromise) {
+      return SESSION_CACHE.refreshPromise;
+    }
+
+    try {
+      SESSION_CACHE.refreshPromise = supabase.auth.refreshSession();
+      const { data: { session: refreshedSession }, error } = await SESSION_CACHE.refreshPromise;
+
+      if (error) {
+        console.error('[Auth] Session refresh error:', error);
+        return null;
+      }
+
+      if (refreshedSession) {
+        SESSION_CACHE.data = refreshedSession;
+        SESSION_CACHE.timestamp = Date.now();
+        return refreshedSession;
+      }
+    } catch (error) {
+      console.error('[Auth] Token refresh error:', error);
+      return null;
+    } finally {
+      SESSION_CACHE.refreshPromise = null;
+    }
+  }, 1000, { leading: true, trailing: false }); // Only execute first call within 1 second
 
   const initialize = async () => {
     if (!mountedRef.current || initializingRef.current) return;
@@ -66,20 +96,29 @@ const useAuthSession = () => {
   useEffect(() => {
     mountedRef.current = true;
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, changedSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
       if (!mountedRef.current) return;
       
       console.log("[Auth] State changed:", event);
       if (event === 'SIGNED_OUT') {
         SESSION_CACHE.data = null;
         SESSION_CACHE.timestamp = 0;
+        SESSION_CACHE.refreshPromise = null;
+      } else if (event === 'TOKEN_REFRESHED' && changedSession) {
+        // Update cache with the refreshed session
+        SESSION_CACHE.data = changedSession;
+        SESSION_CACHE.timestamp = Date.now();
       }
-      initialize();
+      
+      if (mountedRef.current) {
+        setSession(changedSession);
+      }
     });
 
     cleanupRef.current = () => {
       console.log("[Auth] Cleaning up subscription");
       subscription?.unsubscribe();
+      debouncedRefreshToken.cancel();
     };
 
     initialize();
