@@ -23,8 +23,8 @@ export function DraggableTaskContainer({
       {...provided.draggableProps}
       {...provided.dragHandleProps}
       className={cn(
-        "relative bg-[#1A1D24] rounded-lg p-4 transition-all duration-200 ease-in-out",
-        "min-h-[180px] w-full cursor-pointer",
+        "relative bg-[#1A1D24] rounded-lg transition-all duration-200 ease-in-out",
+        "min-h-[160px] w-full min-w-[250px] cursor-pointer",
         "hover:bg-[#242832] hover:shadow-md",
         "border-l-4",
         {

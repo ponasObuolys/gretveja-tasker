@@ -37,7 +37,7 @@ export function TaskContent({
   const { data: attachments, isError } = useTaskAttachments(task.id);
 
   return (
-    <div className="flex flex-col h-full gap-3">
+    <div className="flex flex-col h-full gap-2 p-3">
       <div className="flex items-start gap-2">
         {isSelectionMode && (
           <Checkbox
@@ -47,18 +47,29 @@ export function TaskContent({
           />
         )}
 
-        <div className="flex-1 space-y-2 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className={cn(
-              "font-medium text-lg leading-tight break-words line-clamp-2",
-              isTerminalStatus && "line-through opacity-50"
-            )}>
-              {task.title}
-            </h3>
-            {isTerminalStatus && <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />}
+        <div className="flex-1 min-w-0">
+          <h3 className={cn(
+            "font-medium text-base leading-tight break-words line-clamp-2 mb-2",
+            isTerminalStatus && "line-through opacity-50"
+          )}>
+            {task.title}
+          </h3>
+
+          {task.description && (
+            <p className="text-sm text-gray-400 line-clamp-2 break-words mb-3">
+              {task.description}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-1 text-xs text-gray-400">
+            <div>Sukūrė: {task.created_by_profile?.email || "—"}</div>
+            {task.deadline && (
+              <div>Terminas: {format(new Date(task.deadline), "yyyy-MM-dd")}</div>
+            )}
+            <div>Perkėlė: {task.moved_by_profile?.email || "—"}</div>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 mt-3">
             {isOverdue && (
               <Badge variant="destructive" className="text-[10px] whitespace-nowrap">
                 Vėluoja
@@ -66,27 +77,8 @@ export function TaskContent({
             )}
             <TaskPriorityBadge priority={task.priority} />
             {!isError && <TaskAttachmentsBadge count={attachments.length} />}
+            {isTerminalStatus && <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 ml-auto" />}
           </div>
-        </div>
-      </div>
-
-      {task.description && (
-        <p className="text-sm text-gray-400 line-clamp-2 break-words">
-          {task.description}
-        </p>
-      )}
-
-      <div className="mt-auto grid grid-cols-2 gap-2 text-xs text-gray-400">
-        <div>
-          <div>Sukūrė: {task.created_by_profile?.email}</div>
-          <div>Perkėlė: {task.moved_by_profile?.email || "—"}</div>
-        </div>
-        <div className="text-right">
-          <div>Terminas: {task.deadline ? format(new Date(task.deadline), "yyyy-MM-dd") : "—"}</div>
-          <div>Sukurta: {format(new Date(task.created_at), "yyyy-MM-dd")}</div>
-          {isTerminalStatus && task.updated_at && (
-            <div>Užbaigta: {format(new Date(task.updated_at), "yyyy-MM-dd")}</div>
-          )}
         </div>
       </div>
     </div>
