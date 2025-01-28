@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { SESSION_CACHE, isSessionValid, updateSessionCache } from './useSessionCache';
 import { supabase } from '@/integrations/supabase/client';
 
-const initializeSession = async (
+export const initializeSession = async (
   mounted: boolean,
   setSession: (session: any) => void,
 ) => {

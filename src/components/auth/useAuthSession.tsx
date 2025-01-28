@@ -16,7 +16,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const { initializeSession } = useSessionInitialization(setSession, setLoading);
+  const initSession = useSessionInitialization(setSession, setLoading);
   const { onSignIn, onSignOut, onTokenRefresh } = useAuthStateHandlers(setSession, setLoading);
 
   const setupRefreshTimer = useCallback((currentSession: Session) => {
@@ -75,7 +75,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       }
     );
 
-    initializeSession(mounted);
+    initSession(mounted);
 
     return () => {
       mounted = false;
@@ -83,7 +83,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
       console.log("Cleaning up auth subscription in useAuthSession");
       subscription.unsubscribe();
     };
-  }, [toast, debouncedAuthStateChange, initializeSession]);
+  }, [toast, debouncedAuthStateChange, initSession]);
 
   return { session, loading };
 };
