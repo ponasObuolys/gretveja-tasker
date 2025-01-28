@@ -51,7 +51,7 @@ export function TaskDetailsContent({
   handleStatusChange,
   onDelete,
 }: TaskDetailsContentProps) {
-  const [editingField, setEditingField] = useState<'description' | 'deadline' | null>(null);
+  const [editingField, setEditingField] = useState<'title' | 'description' | 'deadline' | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -95,9 +95,9 @@ export function TaskDetailsContent({
   };
 
   const renderEditableField = (
-    field: 'description' | 'deadline',
+    field: 'title' | 'description' | 'deadline',
     currentValue: string,
-    inputType: 'textarea' | 'datetime-local'
+    inputType: 'text' | 'textarea' | 'datetime-local'
   ) => {
     const isEditing = editingField === field;
 
@@ -106,7 +106,9 @@ export function TaskDetailsContent({
         <div className="group">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              {field === 'description' ? (
+              {field === 'title' ? (
+                <h3 className="text-lg font-medium">{currentValue}</h3>
+              ) : field === 'description' ? (
                 <p className="text-sm text-gray-200 whitespace-pre-wrap">{currentValue || "Nėra aprašymo"}</p>
               ) : (
                 <div className="text-sm text-gray-200">
@@ -174,38 +176,33 @@ export function TaskDetailsContent({
 
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">{task.title}</h3>
-          {isAdmin && (
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditingField('description')}
-                className="opacity-80 hover:opacity-100 transition-opacity"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
-            </div>
-          )}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Sukūrė: {task.created_by_profile?.email} • {format(new Date(task.created_at), "yyyy-MM-dd HH:mm")}
         </div>
-
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <div>
-            Sukūrė: {task.created_by_profile?.email} • {format(new Date(task.created_at), "yyyy-MM-dd HH:mm")}
+        {isAdmin && (
+          <div className="flex gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingField('title')}
+              className="opacity-80 hover:opacity-100 transition-opacity"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <TaskDeleteButton isAdmin={isAdmin} onDelete={onDelete} />
           </div>
-          {task.deadline && (
-            <div>
-              Terminas: {format(new Date(task.deadline), "yyyy-MM-dd HH:mm")}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="space-y-4">
+        {renderEditableField('title', task.title, 'text')}
         {renderEditableField('description', task.description || '', 'textarea')}
+        {task.deadline && (
+          <div className="text-sm text-muted-foreground">
+            Terminas: {format(new Date(task.deadline), "yyyy-MM-dd HH:mm")}
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
