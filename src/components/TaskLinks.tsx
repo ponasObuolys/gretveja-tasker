@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Link, Trash2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface TaskLink {
   id: string;
@@ -17,6 +18,7 @@ interface TaskLink {
 export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolean }) {
   const [newUrl, setNewUrl] = useState('');
   const { toast } = useToast();
+  const { data: session } = useSession();
 
   const { data: links = [], refetch } = useQuery({
     queryKey: ['task-links', taskId],
@@ -84,6 +86,14 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
 
   const handleAddLink = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user) {
+      toast({
+        title: 'Prisijungimas būtinas',
+        description: 'Turite būti prisijungę, kad galėtumėte pridėti nuorodas',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!newUrl) return;
     addLinkMutation.mutate(newUrl);
   };
@@ -92,7 +102,7 @@ export function TaskLinks({ taskId, isAdmin }: { taskId: string; isAdmin: boolea
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Nuorodos:</h4>
       
-      {isAdmin && (
+      {isAdmin && session?.user && (
         <form onSubmit={handleAddLink} className="flex gap-2">
           <Input
             type="url"
