@@ -12,7 +12,7 @@ const SESSION_CACHE = {
   lastEventTimestamp: 0,
   isInitialized: false,
   initializationPromise: null,
-  globalInitComplete: false // New flag to track global initialization completion
+  globalInitComplete: false
 };
 
 const EVENT_DEBOUNCE_TIME = 2000;
@@ -74,7 +74,7 @@ const useAuthSession = () => {
   }, 2000, { leading: true, trailing: false });
 
   const initialize = async () => {
-    // Skip if global initialization is complete or component is unmounted
+    // Skip if already initialized globally or component is unmounted
     if (!mountedRef.current || SESSION_CACHE.globalInitComplete) {
       return;
     }
@@ -129,6 +129,11 @@ const useAuthSession = () => {
   };
 
   useEffect(() => {
+    if (SESSION_CACHE.globalInitComplete && SESSION_CACHE.data) {
+      setSession(SESSION_CACHE.data);
+      return;
+    }
+
     mountedRef.current = true;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
@@ -163,12 +168,8 @@ const useAuthSession = () => {
       debouncedRefreshToken.cancel();
     };
 
-    // Only initialize if not already completed globally
     if (!SESSION_CACHE.globalInitComplete) {
       initialize();
-    } else if (SESSION_CACHE.data && mountedRef.current) {
-      // If already initialized, just set the session from cache
-      setSession(SESSION_CACHE.data);
     }
 
     return () => {
