@@ -31,18 +31,20 @@ export const createQueryClient = () => {
         },
         gcTime: 10 * 60 * 1000, // 10 minutes
         staleTime: 5 * 60 * 1000, // 5 minutes
-        onError: (error: any) => {
-          if (import.meta.env.PROD) {
-            Sentry.captureException(error, {
-              extra: {
-                message: error.message,
-                status: error?.response?.status,
-              },
-            });
-          } else {
-            console.error('Query error:', error);
+        meta: {
+          errorHandler: (error: any) => {
+            if (import.meta.env.PROD) {
+              Sentry.captureException(error, {
+                extra: {
+                  message: error.message,
+                  status: error?.response?.status,
+                },
+              });
+            } else {
+              console.error('Query error:', error);
+            }
           }
-        },
+        }
       },
       mutations: {
         retry: (failureCount, error: any) => {
@@ -60,18 +62,20 @@ export const createQueryClient = () => {
           // Default retry logic
           return failureCount < defaultRetryConfig.maxRetries;
         },
-        onError: (error: any) => {
-          if (import.meta.env.PROD) {
-            Sentry.captureException(error, {
-              extra: {
-                message: error.message,
-                status: error?.response?.status,
-              },
-            });
-          } else {
-            console.error('Mutation error:', error);
+        meta: {
+          errorHandler: (error: any) => {
+            if (import.meta.env.PROD) {
+              Sentry.captureException(error, {
+                extra: {
+                  message: error.message,
+                  status: error?.response?.status,
+                },
+              });
+            } else {
+              console.error('Mutation error:', error);
+            }
           }
-        },
+        }
       },
     },
   });
