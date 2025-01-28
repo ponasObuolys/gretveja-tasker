@@ -10,11 +10,12 @@ const SESSION_CACHE = {
   refreshPromise: null,
   lastAuthEvent: null,
   lastEventTimestamp: 0,
-  isInitialized: false, // Track global initialization state
-  initializationPromise: null // Track ongoing initialization
+  isInitialized: false,
+  initializationPromise: null,
+  globalInitComplete: false // New flag to track global initialization completion
 };
 
-const EVENT_DEBOUNCE_TIME = 2000; // 2 seconds threshold for duplicate events
+const EVENT_DEBOUNCE_TIME = 2000;
 
 const useAuthSession = () => {
   const [session, setSession] = useState(null);
@@ -37,7 +38,6 @@ const useAuthSession = () => {
       SESSION_CACHE.lastAuthEvent === eventKey &&
       now - SESSION_CACHE.lastEventTimestamp < EVENT_DEBOUNCE_TIME
     ) {
-      console.log(`[Auth] Skipping duplicate ${event} event`);
       return false;
     }
 
@@ -46,7 +46,6 @@ const useAuthSession = () => {
     return true;
   };
 
-  // Debounced token refresh function
   const debouncedRefreshToken = debounce(async () => {
     if (SESSION_CACHE.refreshPromise) {
       return SESSION_CACHE.refreshPromise;
@@ -75,49 +74,41 @@ const useAuthSession = () => {
   }, 2000, { leading: true, trailing: false });
 
   const initialize = async () => {
+    // Skip if global initialization is complete or component is unmounted
+    if (!mountedRef.current || SESSION_CACHE.globalInitComplete) {
+      return;
+    }
+
     // Return existing initialization promise if one exists
     if (SESSION_CACHE.initializationPromise) {
       return SESSION_CACHE.initializationPromise;
     }
 
-    // Skip if already initialized globally or component is unmounted
-    if (!mountedRef.current || SESSION_CACHE.isInitialized) {
-      console.log("[Auth] Skipping initialization - already initialized or unmounted");
-      return;
-    }
-    
     try {
       initializingRef.current = true;
       
-      // Create a new initialization promise
       SESSION_CACHE.initializationPromise = (async () => {
-        console.log("[Auth] Starting session initialization");
-
         if (isSessionValid()) {
-          console.log("[Auth] Using cached session");
           if (mountedRef.current) {
             setSession(SESSION_CACHE.data);
-            SESSION_CACHE.isInitialized = true;
+            SESSION_CACHE.globalInitComplete = true;
           }
           return;
         }
 
-        console.log("[Auth] Fetching new session");
         const { data: { session: newSession } } = await supabase.auth.getSession();
 
         if (!mountedRef.current) return;
 
         if (newSession) {
-          console.log("[Auth] New session cached");
           SESSION_CACHE.data = newSession;
           SESSION_CACHE.timestamp = Date.now();
-          SESSION_CACHE.isInitialized = true;
+          SESSION_CACHE.globalInitComplete = true;
           setSession(newSession);
         } else {
-          console.log("[Auth] No active session");
           SESSION_CACHE.data = null;
           SESSION_CACHE.timestamp = 0;
-          SESSION_CACHE.isInitialized = true;
+          SESSION_CACHE.globalInitComplete = true;
           setSession(null);
         }
       })();
@@ -128,7 +119,7 @@ const useAuthSession = () => {
       if (mountedRef.current) {
         SESSION_CACHE.data = null;
         SESSION_CACHE.timestamp = 0;
-        SESSION_CACHE.isInitialized = false;
+        SESSION_CACHE.globalInitComplete = false;
         setSession(null);
       }
     } finally {
@@ -143,13 +134,11 @@ const useAuthSession = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
       if (!mountedRef.current || !shouldProcessAuthEvent(event, changedSession)) return;
       
-      console.log("[Auth] Processing state change:", event);
-      
       if (event === 'SIGNED_OUT') {
         SESSION_CACHE.data = null;
         SESSION_CACHE.timestamp = 0;
         SESSION_CACHE.refreshPromise = null;
-        SESSION_CACHE.isInitialized = false;
+        SESSION_CACHE.globalInitComplete = false;
         SESSION_CACHE.initializationPromise = null;
         if (mountedRef.current) {
           setSession(null);
@@ -170,12 +159,17 @@ const useAuthSession = () => {
     });
 
     cleanupRef.current = () => {
-      console.log("[Auth] Cleaning up subscription");
       subscription?.unsubscribe();
       debouncedRefreshToken.cancel();
     };
 
-    initialize();
+    // Only initialize if not already completed globally
+    if (!SESSION_CACHE.globalInitComplete) {
+      initialize();
+    } else if (SESSION_CACHE.data && mountedRef.current) {
+      // If already initialized, just set the session from cache
+      setSession(SESSION_CACHE.data);
+    }
 
     return () => {
       mountedRef.current = false;
