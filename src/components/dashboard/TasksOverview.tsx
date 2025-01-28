@@ -9,7 +9,7 @@ import { TasksChart } from "./tasks-overview/components/TasksChart";
 
 export function TasksOverview() {
   const [selectedPeriod, setSelectedPeriod] = useState<TaskPeriod>("7");
-  const { data: tasks } = useTasksData(selectedPeriod);
+  const { data: tasks, isLoading } = useTasksData(selectedPeriod);
   const statistics = useTaskStatistics(tasks);
   const chartData = useChartData(tasks, selectedPeriod);
 
@@ -33,7 +33,10 @@ export function TasksOverview() {
         <StatCard title="Sėkmės rodiklis" value={`${statistics.successRate}%`} />
       </div>
 
-      <TasksChart data={chartData} />
+      <TasksChart 
+        data={chartData} 
+        isLoading={isLoading}
+      />
     </div>
   );
 }
