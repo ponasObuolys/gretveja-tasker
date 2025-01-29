@@ -1,69 +1,8 @@
 import { create } from 'zustand';
-import { monitorResourceLoad } from '@/utils/resourceMonitor';
 import * as Sentry from '@sentry/react';
-
-type AuthState = 
-  | 'IDLE' 
-  | 'INITIALIZING' 
-  | 'AUTHENTICATED' 
-  | 'UNAUTHENTICATED' 
-  | 'TOKEN_REFRESH_NEEDED'
-  | 'TOKEN_REFRESHING'
-  | 'TOKEN_REFRESH_FAILED'
-  | 'LOCKED'
-  | 'TIMEOUT'
-  | 'ERROR';
-
-type StateTransition = {
-  from: AuthState;
-  to: AuthState;
-  timestamp: number;
-};
-
-interface AuthStateMachine {
-  state: AuthState;
-  error: Error | null;
-  initializationLock: boolean;
-  lastInitAttempt: number | null;
-  lastRefreshAttempt: number | null;
-  stateHistory: StateTransition[];
-  pendingCleanup: (() => void)[];
-  subscriptions: (() => void)[];
-  isCleaningUp: boolean;
-  
-  setState: (state: AuthState) => void;
-  setError: (error: Error | null) => void;
-  acquireInitLock: () => boolean;
-  acquireRefreshLock: () => boolean;
-  releaseInitLock: () => void;
-  releaseRefreshLock: () => void;
-  addCleanupTask: (task: () => void) => void;
-  executeCleanup: () => void;
-  resetState: () => void;
-  addSubscription: (unsubscribe: () => void) => void;
-  clearSubscriptions: () => void;
-}
-
-const INIT_COOLDOWN = 2000; // 2 seconds
-const REFRESH_COOLDOWN = 1000; // 1 second
-const MAX_HISTORY = 10;
-
-const isValidTransition = (from: AuthState, to: AuthState): boolean => {
-  const validTransitions: Record<AuthState, AuthState[]> = {
-    IDLE: ['INITIALIZING', 'ERROR'],
-    INITIALIZING: ['AUTHENTICATED', 'UNAUTHENTICATED', 'LOCKED', 'TIMEOUT', 'ERROR'],
-    AUTHENTICATED: ['TOKEN_REFRESH_NEEDED', 'UNAUTHENTICATED', 'ERROR'],
-    UNAUTHENTICATED: ['INITIALIZING', 'ERROR'],
-    TOKEN_REFRESH_NEEDED: ['TOKEN_REFRESHING', 'ERROR'],
-    TOKEN_REFRESHING: ['AUTHENTICATED', 'TOKEN_REFRESH_FAILED', 'ERROR'],
-    TOKEN_REFRESH_FAILED: ['TOKEN_REFRESHING', 'UNAUTHENTICATED', 'ERROR'],
-    LOCKED: ['INITIALIZING', 'UNAUTHENTICATED', 'ERROR'],
-    TIMEOUT: ['INITIALIZING', 'UNAUTHENTICATED', 'ERROR'],
-    ERROR: ['IDLE', 'UNAUTHENTICATED'],
-  };
-
-  return validTransitions[from]?.includes(to) ?? false;
-};
+import { AuthStateMachine, AuthState, StateTransition } from './types/authTypes';
+import { isValidTransition, INIT_COOLDOWN, REFRESH_COOLDOWN, MAX_HISTORY } from './utils/stateTransitions';
+import { executeCleanup } from './utils/cleanupManager';
 
 export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   state: 'IDLE',
@@ -121,15 +60,12 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
     if (isCleaningUp) return false;
     
     const now = Date.now();
-
     if (lastInitAttempt && (now - lastInitAttempt) < INIT_COOLDOWN) {
       return false;
     }
-
     if (initializationLock) {
       return false;
     }
-
     set({ 
       initializationLock: true,
       lastInitAttempt: now,
@@ -145,7 +81,6 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
     if (lastRefreshAttempt && (now - lastRefreshAttempt) < REFRESH_COOLDOWN) {
       return false;
     }
-
     set({ lastRefreshAttempt: now });
     return true;
   },
@@ -170,32 +105,8 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   executeCleanup: () => {
     const state = get();
     if (state.isCleaningUp) return;
-
     set({ isCleaningUp: true });
-    
-    try {
-      state.pendingCleanup.forEach((task) => {
-        try {
-          task();
-        } catch (error) {
-          console.error('Cleanup task failed:', error);
-        }
-      });
-      
-      state.subscriptions.forEach((unsubscribe) => {
-        try {
-          unsubscribe();
-        } catch (error) {
-          console.error('Subscription cleanup failed:', error);
-        }
-      });
-    } finally {
-      set({
-        pendingCleanup: [],
-        subscriptions: [],
-        isCleaningUp: false
-      });
-    }
+    executeCleanup(state);
   },
 
   resetState: () => {
@@ -227,7 +138,6 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   clearSubscriptions: () => {
     const state = get();
     if (state.isCleaningUp) return;
-    
     state.executeCleanup();
   },
 }));
@@ -241,7 +151,7 @@ export const withAuthStateTracking = async <T>(
   
   try {
     authState.setState(initialState);
-    const result = await monitorResourceLoad('auth', operation);
+    const result = await operation();
     authState.setState(finalState);
     return result;
   } catch (error) {
