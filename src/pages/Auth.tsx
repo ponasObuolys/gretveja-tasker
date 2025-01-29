@@ -48,7 +48,6 @@ const Auth = () => {
           theme="default"
           onlyThirdPartyProviders={false}
           magicLink={false}
-          views={['sign_in', 'sign_up']}
         />
       )}
     </AuthContainer>
