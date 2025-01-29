@@ -26,6 +26,7 @@ interface AuthStateMachine {
   lastRefreshAttempt: number | null;
   stateHistory: StateTransition[];
   pendingCleanup: (() => void)[];
+  subscriptions: (() => void)[];
   
   setState: (state: AuthState) => void;
   setError: (error: Error | null) => void;
@@ -36,6 +37,8 @@ interface AuthStateMachine {
   addCleanupTask: (task: () => void) => void;
   executeCleanup: () => void;
   resetState: () => void;
+  addSubscription: (unsubscribe: () => void) => void;
+  clearSubscriptions: () => void;
 }
 
 const INIT_COOLDOWN = 2000; // 2 seconds
@@ -65,6 +68,7 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   lastRefreshAttempt: null,
   stateHistory: [],
   pendingCleanup: [],
+  subscriptions: [],
 
   setState: (newState) => {
     const currentState = get().state;
@@ -167,6 +171,7 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
 
   resetState: () => {
     get().executeCleanup();
+    get().clearSubscriptions();
     set({
       state: 'IDLE',
       error: null,
@@ -175,7 +180,26 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
       lastRefreshAttempt: null,
       stateHistory: [],
       pendingCleanup: [],
+      subscriptions: [],
     });
+  },
+
+  addSubscription: (unsubscribe) => {
+    set((state) => ({
+      subscriptions: [...state.subscriptions, unsubscribe],
+    }));
+  },
+
+  clearSubscriptions: () => {
+    const { subscriptions } = get();
+    subscriptions.forEach((unsubscribe) => {
+      try {
+        unsubscribe();
+      } catch (error) {
+        console.error('Subscription cleanup failed:', error);
+      }
+    });
+    set({ subscriptions: [] });
   },
 }));
 
@@ -196,4 +220,4 @@ export const withAuthStateTracking = async <T>(
     authState.setError(error as Error);
     throw error;
   }
-}; 
+};
