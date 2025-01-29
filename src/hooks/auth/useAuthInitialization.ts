@@ -1,30 +1,65 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useAuthStateMachine, withAuthStateTracking } from './useAuthStateMachine';
 import { useSessionPersistence } from './useSessionPersistence';
 import * as Sentry from '@sentry/react';
+import { useNavigate } from 'react-router-dom';
 
-const MAX_INIT_RETRIES = 3;
-const INIT_RETRY_DELAY = 1000;
+// Circuit breaker configuration
+const MAX_AUTH_ATTEMPTS = 1;
+const AUTH_TIMEOUT = 5000;
+const PREVENT_REDIRECT = true;
+
+type AuthState = 'IDLE' | 'INITIALIZING' | 'AUTHENTICATED' | 'UNAUTHENTICATED' | 'LOCKED' | 'TIMEOUT';
 
 export const useAuthInitialization = () => {
+  const navigate = useNavigate();
   const authState = useAuthStateMachine();
   const { getStoredSession, refreshToken, clearSession } = useSessionPersistence();
   const retryCount = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const mountedRef = useRef(true);
+  const initLockRef = useRef(false);
+  const [authTimeout, setAuthTimeout] = useState(false);
+
+  const clearAuthStates = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    retryCount.current = 0;
+    initLockRef.current = false;
+    authState.clearSubscriptions();
+    clearSession();
+  }, [clearSession]);
+
+  const handleTimeout = useCallback(() => {
+    console.log('Auth initialization timeout');
+    setAuthTimeout(true);
+    authState.setState('TIMEOUT');
+    clearAuthStates();
+    if (!PREVENT_REDIRECT) {
+      navigate('/auth');
+    }
+  }, [navigate, clearAuthStates]);
 
   const initialize = useCallback(async () => {
     if (!mountedRef.current) return;
     
-    // Prevent concurrent initialization attempts
-    if (!authState.acquireInitLock()) {
-      console.log('Auth initialization already in progress or too recent');
+    // Strict initialization lock
+    if (initLockRef.current) {
+      console.log('Auth initialization locked');
       return;
     }
+
+    // Set timeout for initialization
+    timeoutRef.current = setTimeout(handleTimeout, AUTH_TIMEOUT);
+    initLockRef.current = true;
 
     try {
       await withAuthStateTracking(
         async () => {
+          // Clear existing subscriptions before new attempt
+          authState.clearSubscriptions();
+          
           const session = getStoredSession();
           if (!session) {
             console.log('No stored session found');
@@ -33,7 +68,6 @@ export const useAuthInitialization = () => {
             return;
           }
 
-          // Check if session is expired
           if (session.expiresAt <= Date.now()) {
             console.log('Session expired, attempting refresh');
             await refreshToken();
@@ -49,47 +83,53 @@ export const useAuthInitialization = () => {
       console.error('Auth initialization failed:', error);
       Sentry.captureException(error);
 
-      if (retryCount.current < MAX_INIT_RETRIES && mountedRef.current) {
+      if (retryCount.current < MAX_AUTH_ATTEMPTS && mountedRef.current) {
         retryCount.current++;
-        console.log(`Retrying initialization (attempt ${retryCount.current}/${MAX_INIT_RETRIES})`);
-        timeoutRef.current = setTimeout(initialize, INIT_RETRY_DELAY);
+        console.log(`Auth retry blocked - max attempts (${MAX_AUTH_ATTEMPTS}) enforced`);
+        authState.setState('LOCKED');
       } else {
-        console.log('Max initialization retries reached');
+        console.log('Auth initialization failed permanently');
         clearSession();
         authState.setState('UNAUTHENTICATED');
+        if (!PREVENT_REDIRECT) {
+          navigate('/auth');
+        }
       }
     } finally {
-      authState.releaseInitLock();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      initLockRef.current = false;
     }
-  }, [authState, getStoredSession, refreshToken, clearSession]);
+  }, [authState, getStoredSession, refreshToken, clearSession, navigate, handleTimeout]);
+
+  const forceRefresh = useCallback(async () => {
+    setAuthTimeout(false);
+    clearAuthStates();
+    await initialize();
+  }, [initialize, clearAuthStates]);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    const initAuth = async () => {
-      if (!mountedRef.current) return;
-      await initialize();
-    };
-
     if (authState.state === 'IDLE') {
       console.log('Starting auth initialization');
-      initAuth();
+      initialize();
     }
 
     return () => {
       mountedRef.current = false;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      authState.clearSubscriptions();
-      retryCount.current = 0;
+      clearAuthStates();
     };
-  }, [initialize, authState.state]);
+  }, [initialize, authState.state, clearAuthStates]);
 
   return {
     isInitializing: authState.state === 'INITIALIZING',
     isAuthenticated: authState.state === 'AUTHENTICATED',
+    isLocked: authState.state === 'LOCKED',
+    isTimedOut: authTimeout,
     error: authState.error,
     initialize,
+    forceRefresh,
   };
 }; 
