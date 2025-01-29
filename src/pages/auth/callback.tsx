@@ -29,6 +29,11 @@ const AuthCallback = () => {
 
         if (sessionError) {
           console.error("Session error in callback:", sessionError);
+          if (sessionError.status === 400) {
+            setError("Invalid session request. Please try logging in again.");
+            navigate("/auth", { replace: true });
+            return;
+          }
           throw sessionError;
         }
 

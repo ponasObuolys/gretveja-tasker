@@ -44,7 +44,7 @@ export function useDashboardLayout(): DashboardLayoutState & DashboardLayoutActi
 
   const { toast } = useToast();
 
-  const { data: profile } = useQuery({
+  const { data: profile, error: profileError, isError } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -59,7 +59,26 @@ export function useDashboardLayout(): DashboardLayoutState & DashboardLayoutActi
       if (error) throw error;
       return data as Tables<"profiles">;
     },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    cacheTime: 1000 * 60 * 10, // Keep cache for 10 minutes
   });
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Error loading profile",
+        description: profileError?.message || "An error occurred",
+        variant: "destructive",
+      });
+    }
+  }, [isError, profileError, toast]);
+
+  useEffect(() => {
+    return () => {
+      // Perform any necessary cleanup here
+      console.log("Cleaning up DashboardLayout state");
+    };
+  }, []);
 
   const isAdmin = profile?.role === "ADMIN";
 

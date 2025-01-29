@@ -63,7 +63,7 @@ export const useAuthInitialization = () => {
       await initialize();
     };
 
-    if (authState.state === 'IDLE') {
+    if (authState.state === 'IDLE' && initRetries === 0) {
       console.log('Starting auth initialization');
       initAuth();
     }
@@ -71,6 +71,7 @@ export const useAuthInitialization = () => {
     return () => {
       mounted = false;
       // Clear any auth subscriptions here
+      authState.clearSubscriptions();
     };
   }, [initialize, authState.state]);
 
