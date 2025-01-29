@@ -57,6 +57,14 @@ export const useAuthInitialization = () => {
               authState.setState('AUTHENTICATED');
             } catch (error) {
               console.error('Token refresh failed:', error);
+              // Handle refresh token not found error gracefully
+              if (error instanceof Error && 
+                  error.message.includes('refresh_token_not_found')) {
+                console.log('Refresh token not found, clearing session');
+                clearSession();
+                authState.setState('UNAUTHENTICATED');
+                return;
+              }
               clearSession();
               authState.setState('UNAUTHENTICATED');
             }
@@ -106,7 +114,7 @@ export const useAuthInitialization = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      authState.clearSubscriptions?.();
+      authState.executeCleanup();
       retryCount.current = 0;
     };
   }, [initialize, authState.state]);
@@ -117,4 +125,4 @@ export const useAuthInitialization = () => {
     error: authState.error,
     initialize,
   };
-}; 
+};

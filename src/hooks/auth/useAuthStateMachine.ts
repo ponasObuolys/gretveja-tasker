@@ -196,4 +196,4 @@ export const withAuthStateTracking = async <T>(
     authState.setError(error as Error);
     throw error;
   }
-}; 
+};
