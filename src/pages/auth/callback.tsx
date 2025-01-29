@@ -10,7 +10,9 @@ import * as Sentry from "@sentry/react";
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 const ERROR_REDIRECT_DELAY = 2000;
-const AUTO_RELOAD_DELAY = 500; // Add delay before reload
+const AUTO_RELOAD_DELAY = 500;
+const SESSION_CHECK_INTERVAL = 100;
+const MAX_SESSION_CHECKS = 10;
 
 // Lithuanian translations
 const translations = {
@@ -30,15 +32,20 @@ const AuthCallback = () => {
   const navigationAttempted = useRef(false);
   const processingAuth = useRef(false);
   const retryCount = useRef(0);
+  const sessionCheckCount = useRef(0);
   const mountedRef = useRef(true);
   const authState = useAuthStateMachine();
-  const reloadAttempted = useRef(false);
 
   useEffect(() => {
-    console.log("Processing auth callback");
+    console.log("Auth callback mounted");
     mountedRef.current = true;
-    let navigationTimeout: NodeJS.Timeout;
-    let reloadTimeout: NodeJS.Timeout;
+    let sessionCheckInterval: NodeJS.Timeout;
+    let errorRedirectTimeout: NodeJS.Timeout;
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    };
 
     const handleAuthCallback = async () => {
       if (processingAuth.current) {
@@ -58,37 +65,42 @@ const AuthCallback = () => {
           throw new Error(errorDescription || `${translations.authError}: ${errorCode}`);
         }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("Session error in callback:", sessionError);
-          throw sessionError;
-        }
+        // Initial session check
+        let session = await checkSession();
 
         if (!session) {
-          if (retryCount.current < MAX_RETRIES) {
-            console.log(`No session found in callback, attempting retry ${retryCount.current + 1}/${MAX_RETRIES}`);
-            retryCount.current++;
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            return handleAuthCallback();
-          }
-          throw new Error(translations.invalidSession);
-        }
+          // Start polling for session
+          sessionCheckInterval = setInterval(async () => {
+            if (sessionCheckCount.current >= MAX_SESSION_CHECKS) {
+              clearInterval(sessionCheckInterval);
+              throw new Error(translations.invalidSession);
+            }
 
-        if (mountedRef.current && !navigationAttempted.current) {
-          console.log("Auth callback successful, preparing for reload");
-          navigationAttempted.current = true;
-          authState.setState('AUTHENTICATED');
+            session = await checkSession();
+            sessionCheckCount.current++;
 
-          if (!reloadAttempted.current) {
-            reloadAttempted.current = true;
-            console.log("Scheduling automatic reload");
-            reloadTimeout = setTimeout(() => {
-              if (mountedRef.current) {
-                console.log("Executing automatic reload");
+            if (session) {
+              clearInterval(sessionCheckInterval);
+              console.log("Session established");
+              
+              if (mountedRef.current && !navigationAttempted.current) {
+                navigationAttempted.current = true;
+                authState.setState('AUTHENTICATED');
+                
+                // Force reload to ensure clean state
+                console.log("Reloading application");
                 window.location.href = '/';
               }
-            }, AUTO_RELOAD_DELAY);
+            }
+          }, SESSION_CHECK_INTERVAL);
+        } else {
+          if (mountedRef.current && !navigationAttempted.current) {
+            navigationAttempted.current = true;
+            authState.setState('AUTHENTICATED');
+            
+            // Force reload to ensure clean state
+            console.log("Reloading application");
+            window.location.href = '/';
           }
         }
       } catch (error) {
@@ -98,14 +110,11 @@ const AuthCallback = () => {
         
         if (mountedRef.current) {
           setError(error instanceof Error ? error.message : translations.authError);
-          if (!navigationAttempted.current) {
-            navigationTimeout = setTimeout(() => {
-              if (mountedRef.current && !navigationAttempted.current) {
-                navigationAttempted.current = true;
-                navigate("/auth", { replace: true });
-              }
-            }, ERROR_REDIRECT_DELAY);
-          }
+          errorRedirectTimeout = setTimeout(() => {
+            if (mountedRef.current) {
+              navigate('/auth/login');
+            }
+          }, ERROR_REDIRECT_DELAY);
         }
       } finally {
         processingAuth.current = false;
@@ -116,38 +125,27 @@ const AuthCallback = () => {
 
     return () => {
       mountedRef.current = false;
-      if (navigationTimeout) {
-        clearTimeout(navigationTimeout);
-      }
-      if (reloadTimeout) {
-        clearTimeout(reloadTimeout);
-      }
+      clearInterval(sessionCheckInterval);
+      clearTimeout(errorRedirectTimeout);
     };
-  }, [navigate, location, authState]);
+  }, [location.search, navigate, authState]);
+
+  if (error) {
+    return (
+      <AuthContainer>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AuthContainer>
+    );
+  }
 
   return (
     <AuthContainer>
-      {error ? (
-        <Alert variant="destructive" className="mb-4 border-red-500/50 bg-red-500/10">
-          <AlertDescription className="text-red-400">
-            {error}
-            <button
-              onClick={() => navigate("/auth", { replace: true })}
-              className="ml-2 text-sm underline hover:text-red-300"
-            >
-              {translations.tryAgain}
-            </button>
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="flex items-center justify-center p-4">
-          <div className="text-center">
-            <LoadingSpinner className="mx-auto mb-4" />
-            <p className="text-muted-foreground">{translations.pleaseWait}</p>
-            <p className="text-sm text-muted-foreground/70">{translations.processingAuth}</p>
-          </div>
-        </div>
-      )}
+      <div className="flex flex-col items-center justify-center space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-muted-foreground">{translations.processingAuth}</p>
+      </div>
     </AuthContainer>
   );
 };
