@@ -1,6 +1,6 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartDataPoint } from "../types";
-import { memo } from "react";
+import { memo, forwardRef } from "react";
 
 interface TasksChartProps {
   data: ChartDataPoint[];
@@ -68,6 +68,16 @@ const CustomYAxis = memo(({
 CustomXAxis.displayName = "CustomXAxis";
 CustomYAxis.displayName = "CustomYAxis";
 
+const ChartContainer = forwardRef<HTMLDivElement, { children: React.ReactNode }>(
+  ({ children }, ref) => (
+    <div ref={ref} className="w-full h-full">
+      {children}
+    </div>
+  )
+);
+
+ChartContainer.displayName = "ChartContainer";
+
 export const TasksChart = memo(({ data, isLoading }: TasksChartProps) => {
   if (isLoading) {
     return (
@@ -80,8 +90,8 @@ export const TasksChart = memo(({ data, isLoading }: TasksChartProps) => {
   }
 
   return (
-    <div className="min-h-[300px] w-full min-w-[300px] aspect-[16/9] sm:aspect-[21/9]">
-      <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+    <div style={{ width: '100%', height: 300, minWidth: 300 }}>
+      <ResponsiveContainer>
         <LineChart
           data={data}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
