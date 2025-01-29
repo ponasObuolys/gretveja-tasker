@@ -29,6 +29,7 @@ interface AuthStateMachine {
   stateHistory: StateTransition[];
   pendingCleanup: (() => void)[];
   subscriptions: (() => void)[];
+  isCleaningUp: boolean;
   
   setState: (state: AuthState) => void;
   setError: (error: Error | null) => void;
@@ -73,11 +74,12 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   stateHistory: [],
   pendingCleanup: [],
   subscriptions: [],
+  isCleaningUp: false,
 
   setState: (newState) => {
     const currentState = get().state;
     
-    if (currentState === newState) {
+    if (currentState === newState || get().isCleaningUp) {
       return;
     }
 
@@ -85,9 +87,6 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
       console.error(`Invalid state transition: ${currentState} -> ${newState}`);
       return;
     }
-
-    // Execute cleanup tasks before state change
-    get().executeCleanup();
 
     set((state) => ({
       state: newState,
@@ -107,6 +106,7 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   },
   
   setError: (error) => {
+    if (get().isCleaningUp) return;
     set({ error });
     if (error && import.meta.env.PROD) {
       Sentry.captureException(error, {
@@ -117,7 +117,9 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   },
 
   acquireInitLock: () => {
-    const { initializationLock, lastInitAttempt } = get();
+    const { initializationLock, lastInitAttempt, isCleaningUp } = get();
+    if (isCleaningUp) return false;
+    
     const now = Date.now();
 
     if (lastInitAttempt && (now - lastInitAttempt) < INIT_COOLDOWN) {
@@ -136,6 +138,7 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   },
 
   acquireRefreshLock: () => {
+    if (get().isCleaningUp) return false;
     const { lastRefreshAttempt } = get();
     const now = Date.now();
 
@@ -148,34 +151,59 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
   },
 
   releaseInitLock: () => {
+    if (get().isCleaningUp) return;
     set({ initializationLock: false });
   },
 
   releaseRefreshLock: () => {
+    if (get().isCleaningUp) return;
     set({ lastRefreshAttempt: null });
   },
 
   addCleanupTask: (task) => {
+    if (get().isCleaningUp) return;
     set((state) => ({
       pendingCleanup: [...state.pendingCleanup, task],
     }));
   },
 
   executeCleanup: () => {
-    const { pendingCleanup } = get();
-    pendingCleanup.forEach((task) => {
-      try {
-        task();
-      } catch (error) {
-        console.error('Cleanup task failed:', error);
-      }
-    });
-    set({ pendingCleanup: [] });
+    const state = get();
+    if (state.isCleaningUp) return;
+
+    set({ isCleaningUp: true });
+    
+    try {
+      state.pendingCleanup.forEach((task) => {
+        try {
+          task();
+        } catch (error) {
+          console.error('Cleanup task failed:', error);
+        }
+      });
+      
+      state.subscriptions.forEach((unsubscribe) => {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Subscription cleanup failed:', error);
+        }
+      });
+    } finally {
+      set({
+        pendingCleanup: [],
+        subscriptions: [],
+        isCleaningUp: false
+      });
+    }
   },
 
   resetState: () => {
-    get().executeCleanup();
-    get().clearSubscriptions();
+    const state = get();
+    if (state.isCleaningUp) return;
+    
+    state.executeCleanup();
+    
     set({
       state: 'IDLE',
       error: null,
@@ -185,25 +213,22 @@ export const useAuthStateMachine = create<AuthStateMachine>((set, get) => ({
       stateHistory: [],
       pendingCleanup: [],
       subscriptions: [],
+      isCleaningUp: false
     });
   },
 
   addSubscription: (unsubscribe) => {
+    if (get().isCleaningUp) return;
     set((state) => ({
       subscriptions: [...state.subscriptions, unsubscribe],
     }));
   },
 
   clearSubscriptions: () => {
-    const { subscriptions } = get();
-    subscriptions.forEach((unsubscribe) => {
-      try {
-        unsubscribe();
-      } catch (error) {
-        console.error('Subscription cleanup failed:', error);
-      }
-    });
-    set({ subscriptions: [] });
+    const state = get();
+    if (state.isCleaningUp) return;
+    
+    state.executeCleanup();
   },
 }));
 
