@@ -19,22 +19,23 @@ export const TasksChart = memo(({ data, isLoading }: TasksChartProps) => {
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '300px', minWidth: '300px' }}>
-      <ResponsiveContainer>
+    <div className="min-h-[300px] w-full min-w-[300px] aspect-[16/9] sm:aspect-[21/9]">
+      <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
         <LineChart
           data={data}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
         >
           <XAxis 
-            dataKey="date"
-            stroke="currentColor"
+            dataKey="date" 
+            stroke="currentColor" 
             fontSize={12}
             tickMargin={10}
             height={50}
+            tickFormatter={(value) => value}
             className="text-muted-foreground"
           />
           <YAxis 
-            stroke="currentColor"
+            stroke="currentColor" 
             fontSize={12}
             tickMargin={10}
             width={40}
