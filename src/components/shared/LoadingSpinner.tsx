@@ -1,8 +1,6 @@
-import { memo, useEffect, useRef, useCallback, useState } from 'react';
-import { useResizeObserver } from '@/utils/resizeObserver';
+import { memo, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { featureDetector, safeRequestAnimationFrame, safeCancelAnimationFrame } from '@/utils/featureDetection';
 
 interface LoadingSpinnerProps {
   className?: string;
@@ -16,90 +14,39 @@ const sizeClasses = {
   lg: 'w-12 h-12',
 };
 
+const LOADING_TIMEOUT = 3000; // 3 seconds timeout threshold
+
 const SpinnerContent = memo(function SpinnerContent({
   className,
   size = 'md',
 }: Omit<LoadingSpinnerProps, 'fullscreen'>) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
   const mountedRef = useRef(true);
-  const [isVisible, setIsVisible] = useState(false);
-  const [hasResizeObserver] = useState(() => featureDetector.hasResizeObserver());
-
-  const handleResize = useCallback((entries: ResizeObserverEntry[]) => {
-    if (!mountedRef.current || !svgRef.current) return;
-    
-    const entry = entries[0];
-    if (entry) {
-      const { width, height } = entry.contentRect;
-      if (width === 0 || height === 0) return; // Skip invalid dimensions
-      
-      safeRequestAnimationFrame(() => {
-        if (mountedRef.current && svgRef.current) {
-          svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
-        }
-      });
-    }
-  }, []);
-
-  const handleManualResize = useCallback(() => {
-    if (!mountedRef.current || !svgRef.current || !containerRef.current) return;
-    
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    if (width === 0 || height === 0) return;
-
-    safeRequestAnimationFrame(() => {
-      if (mountedRef.current && svgRef.current) {
-        svgRef.current.setAttribute('viewBox', `0 0 ${width} ${height}`);
-      }
-    });
-  }, []);
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
-    let animationHandle: number;
-    let resizeObserver: ResizeObserver | null = null;
-
-    // Ensure component is mounted before starting animations
-    Promise.resolve().then(() => {
-      if (!mountedRef.current) return;
-
-      animationHandle = safeRequestAnimationFrame(() => {
-        if (mountedRef.current) {
-          setIsVisible(true);
-          
-          // Set up manual resize handling if ResizeObserver is not available
-          if (!hasResizeObserver) {
-            window.addEventListener('resize', handleManualResize);
-            handleManualResize();
-          }
-        }
-      });
-    });
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current) {
+        setShowFallback(true);
+      }
+    }, LOADING_TIMEOUT);
 
     return () => {
       mountedRef.current = false;
-      if (animationHandle) {
-        safeCancelAnimationFrame(animationHandle);
-      }
-      if (!hasResizeObserver) {
-        window.removeEventListener('resize', handleManualResize);
-      }
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      setIsVisible(false);
+      clearTimeout(timeoutId);
     };
-  }, [hasResizeObserver, handleManualResize]);
+  }, []);
 
-  // Only use ResizeObserver if it's available
-  if (hasResizeObserver) {
-    useResizeObserver(handleResize, containerRef.current);
+  if (showFallback) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Taking longer than expected...
+      </div>
+    );
   }
 
   return (
     <div
-      ref={containerRef}
       className={cn(
         'relative flex items-center justify-center',
         sizeClasses[size],
@@ -107,10 +54,10 @@ const SpinnerContent = memo(function SpinnerContent({
       )}
     >
       <svg
-        ref={svgRef}
         className={cn(
-          'transition-opacity duration-200',
-          isVisible ? 'opacity-100 animate-spin' : 'opacity-0'
+          'animate-spin',
+          'will-change-transform',
+          'transform-gpu'
         )}
         style={{ 
           width: '100%',
@@ -119,7 +66,8 @@ const SpinnerContent = memo(function SpinnerContent({
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
-        aria-label="Loading"
+        aria-live="polite"
+        role="status"
         data-testid="loading-spinner"
       >
         <circle
@@ -154,7 +102,8 @@ export const LoadingSpinner = memo(function LoadingSpinner(props: LoadingSpinner
     return (
       <div 
         className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-        role="alert"
+        role="status"
+        aria-live="polite"
         aria-busy="true"
         data-testid="fullscreen-spinner"
       >
