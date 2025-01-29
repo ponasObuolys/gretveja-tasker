@@ -46,6 +46,10 @@ const Auth = () => {
           redirectTo={redirectUrl}
           showLinks={true}
           theme="default"
+          onlyThirdPartyProviders={false}
+          magicLink={false}
+          forgotPasswordText=""
+          views={['sign_in', 'sign_up']}
         />
       )}
     </AuthContainer>

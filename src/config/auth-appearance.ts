@@ -34,6 +34,7 @@ export const authAppearance = {
     input: 'bg-[#1A1D24] border-gray-700 text-white focus:border-[#FF4B6E]',
     loader: 'border-t-[#FF4B6E]',
     message: 'text-red-400',
-    anchor: 'text-[#FF4B6E] hover:text-[#FF3355]'
+    anchor: 'text-[#FF4B6E] hover:text-[#FF3355]',
+    forgotPasswordLink: 'hidden'
   }
 };
