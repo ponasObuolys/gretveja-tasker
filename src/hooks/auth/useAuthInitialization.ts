@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 
 const MAX_INIT_RETRIES = 3;
 const INIT_RETRY_DELAY = 1000;
+const INIT_DEBOUNCE = 2000; // 2 seconds debounce for initialization attempts
 
 export const useAuthInitialization = () => {
   const authState = useAuthStateMachine();
@@ -12,10 +13,19 @@ export const useAuthInitialization = () => {
   const retryCount = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const mountedRef = useRef(true);
+  const lastInitAttemptRef = useRef<number>(0);
 
   const initialize = useCallback(async () => {
     if (!mountedRef.current) return;
     
+    // Debounce initialization attempts
+    const now = Date.now();
+    if (now - lastInitAttemptRef.current < INIT_DEBOUNCE) {
+      console.log('Initialization attempted too soon, skipping');
+      return;
+    }
+    lastInitAttemptRef.current = now;
+
     // Prevent concurrent initialization attempts
     if (!authState.acquireInitLock()) {
       console.log('Auth initialization already in progress or too recent');
@@ -26,6 +36,12 @@ export const useAuthInitialization = () => {
       await withAuthStateTracking(
         async () => {
           const session = getStoredSession();
+          
+          // Clear any existing timeouts
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+
           if (!session) {
             console.log('No stored session found');
             clearSession();
@@ -36,7 +52,14 @@ export const useAuthInitialization = () => {
           // Check if session is expired
           if (session.expiresAt <= Date.now()) {
             console.log('Session expired, attempting refresh');
-            await refreshToken();
+            try {
+              await refreshToken();
+              authState.setState('AUTHENTICATED');
+            } catch (error) {
+              console.error('Token refresh failed:', error);
+              clearSession();
+              authState.setState('UNAUTHENTICATED');
+            }
           } else {
             console.log('Valid session found');
             authState.setState('AUTHENTICATED');
@@ -65,13 +88,15 @@ export const useAuthInitialization = () => {
 
   useEffect(() => {
     mountedRef.current = true;
+    lastInitAttemptRef.current = 0;
 
     const initAuth = async () => {
       if (!mountedRef.current) return;
       await initialize();
     };
 
-    if (authState.state === 'IDLE') {
+    // Only initialize if we're in IDLE state and haven't attempted recently
+    if (authState.state === 'IDLE' && Date.now() - lastInitAttemptRef.current >= INIT_DEBOUNCE) {
       console.log('Starting auth initialization');
       initAuth();
     }
@@ -81,7 +106,7 @@ export const useAuthInitialization = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      authState.clearSubscriptions();
+      authState.clearSubscriptions?.();
       retryCount.current = 0;
     };
   }, [initialize, authState.state]);

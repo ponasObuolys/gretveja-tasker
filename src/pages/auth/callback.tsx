@@ -3,11 +3,23 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthContainer } from "@/components/auth/AuthContainer";
+import { useAuthStateMachine } from "@/hooks/auth/useAuthStateMachine";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import * as Sentry from "@sentry/react";
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 const ERROR_REDIRECT_DELAY = 2000;
+
+// Lithuanian translations
+const translations = {
+  pleaseWait: "Prašome palaukti...",
+  processingAuth: "Apdorojama autentifikacija...",
+  invalidSession: "Netinkama sesija. Prašome prisijungti iš naujo.",
+  authError: "Įvyko autentifikacijos klaida",
+  maxRetries: "Viršytas maksimalus bandymų skaičius",
+  tryAgain: "Bandykite dar kartą",
+};
 
 const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +29,7 @@ const AuthCallback = () => {
   const processingAuth = useRef(false);
   const retryCount = useRef(0);
   const mountedRef = useRef(true);
+  const authState = useAuthStateMachine();
 
   useEffect(() => {
     console.log("Processing auth callback");
@@ -31,6 +44,7 @@ const AuthCallback = () => {
       }
 
       processingAuth.current = true;
+      authState.setState('INITIALIZING');
 
       try {
         // Check for error in URL parameters
@@ -39,7 +53,7 @@ const AuthCallback = () => {
         const errorDescription = params.get("error_description");
 
         if (errorCode) {
-          throw new Error(errorDescription || `Authentication error: ${errorCode}`);
+          throw new Error(errorDescription || `${translations.authError}: ${errorCode}`);
         }
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -47,7 +61,7 @@ const AuthCallback = () => {
         if (sessionError) {
           console.error("Session error in callback:", sessionError);
           if (sessionError.status === 400) {
-            setError("Invalid session request. Please try logging in again.");
+            setError(translations.invalidSession);
             if (mountedRef.current && !navigationAttempted.current) {
               navigationAttempted.current = true;
               navigate("/auth", { replace: true });
@@ -66,16 +80,18 @@ const AuthCallback = () => {
               await supabase.auth.getSession();
             
             if (retryError || !retrySession) {
-              throw new Error("Failed to authenticate after retry");
+              throw new Error(translations.maxRetries);
             }
           } else {
-            throw new Error("Maximum retries reached without successful authentication");
+            throw new Error(translations.maxRetries);
           }
         }
 
         if (mountedRef.current && !navigationAttempted.current) {
           console.log("Auth callback successful, navigating to home");
           navigationAttempted.current = true;
+          authState.setState('AUTHENTICATED');
+          
           // Get return URL from localStorage or default to home
           const returnUrl = localStorage.getItem("auth_return_url") || "/";
           localStorage.removeItem("auth_return_url"); // Clean up
@@ -84,9 +100,10 @@ const AuthCallback = () => {
       } catch (error) {
         console.error("Auth callback error:", error);
         Sentry.captureException(error);
+        authState.setState('ERROR');
         
         if (mountedRef.current) {
-          setError(error instanceof Error ? error.message : "Authentication error occurred");
+          setError(error instanceof Error ? error.message : translations.authError);
           // Navigate to auth page after error
           if (!navigationAttempted.current) {
             navigationTimeout = setTimeout(() => {
@@ -110,7 +127,7 @@ const AuthCallback = () => {
         clearTimeout(navigationTimeout);
       }
     };
-  }, [navigate, location]);
+  }, [navigate, location, authState]);
 
   return (
     <AuthContainer>
@@ -118,13 +135,20 @@ const AuthCallback = () => {
         <Alert variant="destructive" className="mb-4 border-red-500/50 bg-red-500/10">
           <AlertDescription className="text-red-400">
             {error}
+            <button
+              onClick={() => navigate("/auth", { replace: true })}
+              className="ml-2 text-sm underline hover:text-red-300"
+            >
+              {translations.tryAgain}
+            </button>
           </AlertDescription>
         </Alert>
       ) : (
         <div className="flex items-center justify-center p-4">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Please wait...</p>
+            <LoadingSpinner className="mx-auto mb-4" />
+            <p className="text-muted-foreground">{translations.pleaseWait}</p>
+            <p className="text-sm text-muted-foreground/70">{translations.processingAuth}</p>
           </div>
         </div>
       )}
