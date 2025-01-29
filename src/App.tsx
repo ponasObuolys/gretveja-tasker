@@ -39,118 +39,94 @@ const ConnectionAlert = () => {
   );
 };
 
-const ErrorFallback = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen p-4">
-    <div className="max-w-md w-full space-y-4">
-      <Alert variant="destructive">
-        <h2 className="text-lg font-semibold">Įvyko klaida</h2>
-        <p className="text-sm">Įvyko nenumatyta klaida. Bandykite dar kartą.</p>
-      </Alert>
-      <button
-        onClick={() => window.location.reload()}
-        className="w-full px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90"
-      >
-        Bandyti dar kartą
-      </button>
-    </div>
-  </div>
-);
-
 const AppRoutes = () => {
-  const { initializeAuth, setupAuthListener, isInitializing, hasAttemptedInitialAuth } = useAuthManagement({ queryClient });
+  const { initializeAuth, setupAuthListener } = useAuthManagement({ queryClient });
 
   useEffect(() => {
     console.log("Starting auth initialization in AppRoutes");
     let mounted = true;
-
-    const initAuth = async () => {
-      if (!mounted || hasAttemptedInitialAuth) {
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000;
+    
+    const retryAuth = async () => {
+      if (!mounted) {
+        console.log("Component unmounted, stopping auth initialization");
         return;
       }
 
       try {
+        console.log(`Auth initialization attempt ${retryCount + 1}`);
         await initializeAuth();
+        console.log("Auth initialization successful");
       } catch (error) {
-        console.error("Fatal auth initialization error:", error);
-        if (import.meta.env.PROD) {
-          Sentry.captureException(error, {
-            level: 'error',
-            tags: {
-              type: 'auth_initialization_fatal'
-            }
-          });
+        console.error(`Auth initialization attempt ${retryCount + 1} failed:`, error);
+        if (retryCount < maxRetries && mounted) {
+          retryCount++;
+          console.log(`Retrying auth initialization in ${retryDelay}ms`);
+          setTimeout(retryAuth, retryDelay);
+        } else {
+          console.error("Max retries reached for auth initialization");
+          if (import.meta.env.PROD) {
+            Sentry.captureException(error, {
+              level: 'error',
+              tags: {
+                type: 'auth_initialization_failed',
+                retryCount: retryCount.toString()
+              }
+            });
+          }
         }
       }
     };
 
-    initAuth();
+    retryAuth();
 
     const { data: { subscription } } = setupAuthListener();
 
     return () => {
       mounted = false;
+      console.log("Cleaning up auth subscription in AppRoutes");
       subscription.unsubscribe();
     };
-  }, [initializeAuth, setupAuthListener, hasAttemptedInitialAuth]);
+  }, [initializeAuth, setupAuthListener]);
 
   useEffect(() => {
     const cleanup = initializeConnectionStateListeners();
     return () => cleanup();
   }, []);
 
-  if (isInitializing) {
-    return <LoadingSpinner />;
-  }
-
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <ErrorBoundary fallback={<ErrorFallback />}>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </ErrorBoundary>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </Suspense>
   );
 };
 
 const App = () => (
-  <Sentry.ErrorBoundary
-    fallback={({ error }) => (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="max-w-md w-full space-y-4">
-          <Alert variant="destructive">
-            <h2 className="text-lg font-semibold">Kritinė klaida</h2>
-            <p className="text-sm">Įvyko nenumatyta klaida. Perkraukite puslapį.</p>
-            {import.meta.env.DEV && (
-              <pre className="mt-2 text-xs overflow-auto">
-                {error.message}
-              </pre>
-            )}
-          </Alert>
-        </div>
-      </div>
-    )}
-  >
+  <ErrorBoundary>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AppRoutes />
+        <TooltipProvider delayDuration={0}>
           <Toaster />
           <Sonner />
           <ConnectionAlert />
+          <AppRoutes />
         </TooltipProvider>
       </QueryClientProvider>
     </BrowserRouter>
-  </Sentry.ErrorBoundary>
+  </ErrorBoundary>
 );
 
 export default App;
