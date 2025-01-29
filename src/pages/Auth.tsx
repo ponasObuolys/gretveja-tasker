@@ -45,6 +45,15 @@ const Auth = () => {
           view="sign_in"
           showLinks={true}
           redirectTo={redirectUrl}
+          viewOptions={{
+            signIn: {
+              showLinks: true,
+              forgotPasswordText: ''
+            },
+            signUp: {
+              showLinks: true
+            }
+          }}
         />
       )}
     </AuthContainer>
