@@ -28,7 +28,7 @@ export const useAuthInitialization = () => {
 
     // Prevent concurrent initialization attempts
     if (!authState.acquireInitLock()) {
-      console.log('Auth initialization already in progress or too recent');
+      console.log('Auth initialization already in progress');
       return;
     }
 
@@ -43,9 +43,10 @@ export const useAuthInitialization = () => {
           }
 
           if (!session) {
-            console.log('No stored session found');
+            console.log('No stored session found, transitioning to UNAUTHENTICATED');
             clearSession();
             authState.setState('UNAUTHENTICATED');
+            window.location.href = '/auth'; // Force redirect to auth page
             return;
           }
 
@@ -63,10 +64,12 @@ export const useAuthInitialization = () => {
                 console.log('Refresh token not found, clearing session');
                 clearSession();
                 authState.setState('UNAUTHENTICATED');
+                window.location.href = '/auth';
                 return;
               }
               clearSession();
               authState.setState('UNAUTHENTICATED');
+              window.location.href = '/auth';
             }
           } else {
             console.log('Valid session found');
@@ -88,6 +91,7 @@ export const useAuthInitialization = () => {
         console.log('Max initialization retries reached');
         clearSession();
         authState.setState('UNAUTHENTICATED');
+        window.location.href = '/auth';
       }
     } finally {
       authState.releaseInitLock();
@@ -104,7 +108,7 @@ export const useAuthInitialization = () => {
     };
 
     // Only initialize if we're in IDLE state and haven't attempted recently
-    if (authState.state === 'IDLE' && Date.now() - lastInitAttemptRef.current >= INIT_DEBOUNCE) {
+    if (authState.state === 'IDLE') {
       console.log('Starting auth initialization');
       initAuth();
     }

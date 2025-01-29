@@ -19,6 +19,7 @@ const translations = {
   authError: "Įvyko autentifikacijos klaida",
   maxRetries: "Viršytas maksimalus bandymų skaičius",
   tryAgain: "Bandykite dar kartą",
+  sessionExpired: "Sesija pasibaigė",
 };
 
 const AuthCallback = () => {
@@ -37,7 +38,6 @@ const AuthCallback = () => {
     let navigationTimeout: NodeJS.Timeout;
 
     const handleAuthCallback = async () => {
-      // Prevent multiple simultaneous auth processing attempts
       if (processingAuth.current) {
         console.log("Auth processing already in progress");
         return;
@@ -47,13 +47,24 @@ const AuthCallback = () => {
       authState.setState('INITIALIZING');
 
       try {
-        // Check for error in URL parameters
         const params = new URLSearchParams(location.search);
         const errorCode = params.get("error");
         const errorDescription = params.get("error_description");
 
         if (errorCode) {
           throw new Error(errorDescription || `${translations.authError}: ${errorCode}`);
+        }
+
+        // Handle hash fragment for OAuth providers
+        if (location.hash) {
+          const { data: { session }, error: signInError } = 
+            await supabase.auth.getSession();
+          
+          if (signInError) throw signInError;
+          
+          if (!session) {
+            throw new Error(translations.invalidSession);
+          }
         }
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -92,10 +103,15 @@ const AuthCallback = () => {
           navigationAttempted.current = true;
           authState.setState('AUTHENTICATED');
           
-          // Get return URL from localStorage or default to home
           const returnUrl = localStorage.getItem("auth_return_url") || "/";
-          localStorage.removeItem("auth_return_url"); // Clean up
-          navigate(returnUrl, { replace: true });
+          localStorage.removeItem("auth_return_url");
+          
+          // Ensure we're not stuck in a redirect loop
+          if (returnUrl === '/auth/callback') {
+            navigate("/", { replace: true });
+          } else {
+            navigate(returnUrl, { replace: true });
+          }
         }
       } catch (error) {
         console.error("Auth callback error:", error);
@@ -104,7 +120,6 @@ const AuthCallback = () => {
         
         if (mountedRef.current) {
           setError(error instanceof Error ? error.message : translations.authError);
-          // Navigate to auth page after error
           if (!navigationAttempted.current) {
             navigationTimeout = setTimeout(() => {
               if (mountedRef.current && !navigationAttempted.current) {
