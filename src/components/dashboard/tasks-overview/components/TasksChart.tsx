@@ -7,66 +7,6 @@ interface TasksChartProps {
   isLoading?: boolean;
 }
 
-interface CustomXAxisProps {
-  dataKey?: string;
-  stroke?: string;
-  fontSize?: number;
-  tickMargin?: number;
-  height?: number;
-  tickFormatter?: (value: string) => string;
-  className?: string;
-}
-
-interface CustomYAxisProps {
-  stroke?: string;
-  fontSize?: number;
-  tickMargin?: number;
-  width?: number;
-  allowDecimals?: boolean;
-  className?: string;
-}
-
-const CustomXAxis = memo(({
-  dataKey = "date",
-  stroke = "currentColor",
-  fontSize = 12,
-  tickMargin = 10,
-  height = 50,
-  tickFormatter = (value: string) => value,
-  className = "text-muted-foreground"
-}: CustomXAxisProps) => (
-  <XAxis
-    dataKey={dataKey}
-    stroke={stroke}
-    fontSize={fontSize}
-    tickMargin={tickMargin}
-    height={height}
-    tickFormatter={tickFormatter}
-    className={className}
-  />
-));
-
-const CustomYAxis = memo(({
-  stroke = "currentColor",
-  fontSize = 12,
-  tickMargin = 10,
-  width = 40,
-  allowDecimals = false,
-  className = "text-muted-foreground"
-}: CustomYAxisProps) => (
-  <YAxis
-    stroke={stroke}
-    fontSize={fontSize}
-    tickMargin={tickMargin}
-    width={width}
-    allowDecimals={allowDecimals}
-    className={className}
-  />
-));
-
-CustomXAxis.displayName = "CustomXAxis";
-CustomYAxis.displayName = "CustomYAxis";
-
 export const TasksChart = memo(({ data, isLoading }: TasksChartProps) => {
   if (isLoading) {
     return (
@@ -79,14 +19,28 @@ export const TasksChart = memo(({ data, isLoading }: TasksChartProps) => {
   }
 
   return (
-    <div className="w-full h-[300px] min-w-[300px]">
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ position: 'relative', width: '100%', height: '300px', minWidth: '300px' }}>
+      <ResponsiveContainer>
         <LineChart
           data={data}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
         >
-          <CustomXAxis />
-          <CustomYAxis />
+          <XAxis 
+            dataKey="date"
+            stroke="currentColor"
+            fontSize={12}
+            tickMargin={10}
+            height={50}
+            className="text-muted-foreground"
+          />
+          <YAxis 
+            stroke="currentColor"
+            fontSize={12}
+            tickMargin={10}
+            width={40}
+            allowDecimals={false}
+            className="text-muted-foreground"
+          />
           <Tooltip 
             contentStyle={{ 
               background: 'var(--background)',
