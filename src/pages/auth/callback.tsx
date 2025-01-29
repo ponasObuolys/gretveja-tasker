@@ -7,12 +7,10 @@ import { useAuthStateMachine } from "@/hooks/auth/useAuthStateMachine";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import * as Sentry from "@sentry/react";
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 500;
 const ERROR_REDIRECT_DELAY = 2000;
-const AUTO_RELOAD_DELAY = 500;
 const SESSION_CHECK_INTERVAL = 100;
-const MAX_SESSION_CHECKS = 10;
 
 // Lithuanian translations
 const translations = {
@@ -29,22 +27,26 @@ const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const navigationAttempted = useRef(false);
   const processingAuth = useRef(false);
   const retryCount = useRef(0);
-  const sessionCheckCount = useRef(0);
   const mountedRef = useRef(true);
   const authState = useAuthStateMachine();
 
   useEffect(() => {
-    console.log("Auth callback mounted");
+    console.log("Auth callback mounted, starting session refresh");
     mountedRef.current = true;
-    let sessionCheckInterval: NodeJS.Timeout;
     let errorRedirectTimeout: NodeJS.Timeout;
 
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
+    const refreshSession = async () => {
+      try {
+        // Force session refresh
+        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw refreshError;
+        return session;
+      } catch (error) {
+        console.error("Session refresh error:", error);
+        return null;
+      }
     };
 
     const handleAuthCallback = async () => {
@@ -65,43 +67,30 @@ const AuthCallback = () => {
           throw new Error(errorDescription || `${translations.authError}: ${errorCode}`);
         }
 
-        // Initial session check
-        let session = await checkSession();
+        // Try to refresh session
+        let session = await refreshSession();
+
+        if (!session && retryCount.current < MAX_RETRIES) {
+          console.log(`Retry attempt ${retryCount.current + 1}/${MAX_RETRIES}`);
+          retryCount.current++;
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          
+          // Try to get session again
+          session = await refreshSession();
+        }
 
         if (!session) {
-          // Start polling for session
-          sessionCheckInterval = setInterval(async () => {
-            if (sessionCheckCount.current >= MAX_SESSION_CHECKS) {
-              clearInterval(sessionCheckInterval);
-              throw new Error(translations.invalidSession);
-            }
+          throw new Error(translations.invalidSession);
+        }
 
-            session = await checkSession();
-            sessionCheckCount.current++;
-
-            if (session) {
-              clearInterval(sessionCheckInterval);
-              console.log("Session established");
-              
-              if (mountedRef.current && !navigationAttempted.current) {
-                navigationAttempted.current = true;
-                authState.setState('AUTHENTICATED');
-                
-                // Force reload to ensure clean state
-                console.log("Reloading application");
-                window.location.href = '/';
-              }
-            }
-          }, SESSION_CHECK_INTERVAL);
-        } else {
-          if (mountedRef.current && !navigationAttempted.current) {
-            navigationAttempted.current = true;
-            authState.setState('AUTHENTICATED');
-            
-            // Force reload to ensure clean state
-            console.log("Reloading application");
-            window.location.href = '/';
-          }
+        if (mountedRef.current) {
+          console.log("Session refreshed successfully, updating state");
+          authState.setState('AUTHENTICATED');
+          
+          // Force page reload to reset auth state
+          window.location.href = '/';
         }
       } catch (error) {
         console.error("Auth callback error:", error);
@@ -125,7 +114,6 @@ const AuthCallback = () => {
 
     return () => {
       mountedRef.current = false;
-      clearInterval(sessionCheckInterval);
       clearTimeout(errorRedirectTimeout);
     };
   }, [location.search, navigate, authState]);
