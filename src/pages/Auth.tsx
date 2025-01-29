@@ -43,7 +43,7 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           view="sign_in"
-          showLinks={true}
+          showLinks={false}
           redirectTo={redirectUrl}
         />
       )}
