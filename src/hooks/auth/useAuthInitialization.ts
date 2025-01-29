@@ -27,7 +27,7 @@ export const useAuthInitialization = () => {
     }
     retryCount.current = 0;
     initLockRef.current = false;
-    authState.clearSubscriptions();
+    // Only clear session data, not subscriptions
     clearSession();
   }, [clearSession]);
 
@@ -39,27 +39,20 @@ export const useAuthInitialization = () => {
     if (!PREVENT_REDIRECT) {
       navigate('/auth');
     }
-  }, [navigate, clearAuthStates]);
+  }, [navigate, clearAuthStates, authState]);
 
   const initialize = useCallback(async () => {
-    if (!mountedRef.current) return;
-    
-    // Strict initialization lock
-    if (initLockRef.current) {
-      console.log('Auth initialization locked');
+    if (!mountedRef.current || initLockRef.current) {
+      console.log('Auth initialization skipped - component unmounted or locked');
       return;
     }
 
-    // Set timeout for initialization
-    timeoutRef.current = setTimeout(handleTimeout, AUTH_TIMEOUT);
     initLockRef.current = true;
+    timeoutRef.current = setTimeout(handleTimeout, AUTH_TIMEOUT);
 
     try {
       await withAuthStateTracking(
         async () => {
-          // Clear existing subscriptions before new attempt
-          authState.clearSubscriptions();
-          
           const session = getStoredSession();
           if (!session) {
             console.log('No stored session found');
@@ -106,7 +99,12 @@ export const useAuthInitialization = () => {
   const forceRefresh = useCallback(async () => {
     setAuthTimeout(false);
     clearAuthStates();
-    await initialize();
+    // Small delay to ensure state is cleared before reinitializing
+    setTimeout(() => {
+      if (mountedRef.current) {
+        initialize();
+      }
+    }, 100);
   }, [initialize, clearAuthStates]);
 
   useEffect(() => {
