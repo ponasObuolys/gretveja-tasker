@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useAuthStateMachine, withAuthStateTracking } from './useAuthStateMachine';
 import { useSessionPersistence } from './useSessionPersistence';
 import * as Sentry from '@sentry/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Circuit breaker configuration
 const MAX_AUTH_ATTEMPTS = 1;
@@ -13,6 +13,7 @@ type AuthState = 'IDLE' | 'INITIALIZING' | 'AUTHENTICATED' | 'UNAUTHENTICATED' |
 
 export const useAuthInitialization = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const authState = useAuthStateMachine();
   const { getStoredSession, refreshToken, clearSession } = useSessionPersistence();
   const retryCount = useRef(0);
@@ -20,6 +21,7 @@ export const useAuthInitialization = () => {
   const mountedRef = useRef(true);
   const initLockRef = useRef(false);
   const [authTimeout, setAuthTimeout] = useState(false);
+  const isAuthPage = location.pathname.startsWith('/auth');
 
   const clearAuthStates = useCallback(() => {
     if (timeoutRef.current) {
@@ -27,26 +29,33 @@ export const useAuthInitialization = () => {
     }
     retryCount.current = 0;
     initLockRef.current = false;
-    // Only clear session data, not subscriptions
     clearSession();
   }, [clearSession]);
 
   const handleTimeout = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     console.log('Auth initialization timeout');
     setAuthTimeout(true);
     authState.setState('TIMEOUT');
     clearAuthStates();
-    if (!PREVENT_REDIRECT) {
-      navigate('/auth');
+    
+    if (!PREVENT_REDIRECT && !isAuthPage) {
+      navigate('/auth', { replace: true });
     }
-  }, [navigate, clearAuthStates, authState]);
+  }, [navigate, clearAuthStates, authState, isAuthPage]);
 
   const initialize = useCallback(async () => {
-    if (!mountedRef.current || initLockRef.current) {
-      console.log('Auth initialization skipped - component unmounted or locked');
+    if (!mountedRef.current || initLockRef.current || isAuthPage) {
+      console.log('Auth initialization skipped:', {
+        mounted: mountedRef.current,
+        locked: initLockRef.current,
+        isAuthPage
+      });
       return;
     }
 
+    console.log('Starting auth initialization');
     initLockRef.current = true;
     timeoutRef.current = setTimeout(handleTimeout, AUTH_TIMEOUT);
 
@@ -58,12 +67,16 @@ export const useAuthInitialization = () => {
             console.log('No stored session found');
             clearSession();
             authState.setState('UNAUTHENTICATED');
+            if (!isAuthPage) {
+              navigate('/auth', { replace: true });
+            }
             return;
           }
 
           if (session.expiresAt <= Date.now()) {
             console.log('Session expired, attempting refresh');
             await refreshToken();
+            authState.setState('AUTHENTICATED');
           } else {
             console.log('Valid session found');
             authState.setState('AUTHENTICATED');
@@ -84,8 +97,8 @@ export const useAuthInitialization = () => {
         console.log('Auth initialization failed permanently');
         clearSession();
         authState.setState('UNAUTHENTICATED');
-        if (!PREVENT_REDIRECT) {
-          navigate('/auth');
+        if (!PREVENT_REDIRECT && !isAuthPage) {
+          navigate('/auth', { replace: true });
         }
       }
     } finally {
@@ -94,32 +107,45 @@ export const useAuthInitialization = () => {
       }
       initLockRef.current = false;
     }
-  }, [authState, getStoredSession, refreshToken, clearSession, navigate, handleTimeout]);
+  }, [
+    authState,
+    getStoredSession,
+    refreshToken,
+    clearSession,
+    navigate,
+    handleTimeout,
+    isAuthPage
+  ]);
 
   const forceRefresh = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
     setAuthTimeout(false);
     clearAuthStates();
+    authState.resetState();
+    
     // Small delay to ensure state is cleared before reinitializing
     setTimeout(() => {
       if (mountedRef.current) {
         initialize();
       }
     }, 100);
-  }, [initialize, clearAuthStates]);
+  }, [initialize, clearAuthStates, authState]);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    if (authState.state === 'IDLE') {
-      console.log('Starting auth initialization');
+    // Only initialize if we're not on the auth page and in IDLE state
+    if (authState.state === 'IDLE' && !isAuthPage) {
       initialize();
     }
 
     return () => {
+      console.log('Auth initialization cleanup');
       mountedRef.current = false;
       clearAuthStates();
     };
-  }, [initialize, authState.state, clearAuthStates]);
+  }, [initialize, authState.state, clearAuthStates, isAuthPage]);
 
   return {
     isInitializing: authState.state === 'INITIALIZING',
