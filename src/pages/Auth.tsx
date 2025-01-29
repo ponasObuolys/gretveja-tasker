@@ -7,6 +7,7 @@ import { useAuthFlow } from "@/hooks/auth/useAuthFlow";
 import { authLocalization } from "@/config/auth-localization";
 import { authAppearance } from "@/config/auth-appearance";
 import { useEffect } from "react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
 
 const Auth = () => {
   const { error, isLoading, isFormReady } = useAuthFlow();
@@ -43,17 +44,9 @@ const Auth = () => {
           localization={{ variables: authLocalization.variables }}
           providers={[]}
           view="sign_in"
-          showLinks={true}
           redirectTo={redirectUrl}
-          viewOptions={{
-            signIn: {
-              showLinks: true,
-              forgotPasswordText: ''
-            },
-            signUp: {
-              showLinks: true
-            }
-          }}
+          showLinks={true}
+          theme="default"
         />
       )}
     </AuthContainer>
