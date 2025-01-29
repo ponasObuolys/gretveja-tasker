@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+export const clearSession = async () => {
+  console.log("Clearing session data");
+  await supabase.auth.signOut();
+  localStorage.removeItem("auth_return_url");
+};
+
 export const refreshSession = async () => {
   console.log("Attempting to refresh session");
   const { data: { session }, error } = await supabase.auth.getSession();
