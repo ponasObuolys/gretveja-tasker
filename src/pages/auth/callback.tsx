@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/react";
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 const ERROR_REDIRECT_DELAY = 2000;
+const AUTO_RELOAD_DELAY = 500; // Add delay before reload
 
 // Lithuanian translations
 const translations = {
@@ -31,11 +32,13 @@ const AuthCallback = () => {
   const retryCount = useRef(0);
   const mountedRef = useRef(true);
   const authState = useAuthStateMachine();
+  const reloadAttempted = useRef(false);
 
   useEffect(() => {
     console.log("Processing auth callback");
     mountedRef.current = true;
     let navigationTimeout: NodeJS.Timeout;
+    let reloadTimeout: NodeJS.Timeout;
 
     const handleAuthCallback = async () => {
       if (processingAuth.current) {
@@ -73,17 +76,19 @@ const AuthCallback = () => {
         }
 
         if (mountedRef.current && !navigationAttempted.current) {
-          console.log("Auth callback successful, navigating to home");
+          console.log("Auth callback successful, preparing for reload");
           navigationAttempted.current = true;
           authState.setState('AUTHENTICATED');
-          
-          const returnUrl = localStorage.getItem("auth_return_url") || "/";
-          localStorage.removeItem("auth_return_url");
-          
-          if (returnUrl === '/auth/callback') {
-            navigate("/", { replace: true });
-          } else {
-            navigate(returnUrl, { replace: true });
+
+          if (!reloadAttempted.current) {
+            reloadAttempted.current = true;
+            console.log("Scheduling automatic reload");
+            reloadTimeout = setTimeout(() => {
+              if (mountedRef.current) {
+                console.log("Executing automatic reload");
+                window.location.href = '/';
+              }
+            }, AUTO_RELOAD_DELAY);
           }
         }
       } catch (error) {
@@ -113,6 +118,9 @@ const AuthCallback = () => {
       mountedRef.current = false;
       if (navigationTimeout) {
         clearTimeout(navigationTimeout);
+      }
+      if (reloadTimeout) {
+        clearTimeout(reloadTimeout);
       }
     };
   }, [navigate, location, authState]);
