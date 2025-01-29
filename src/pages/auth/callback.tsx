@@ -55,30 +55,10 @@ const AuthCallback = () => {
           throw new Error(errorDescription || `${translations.authError}: ${errorCode}`);
         }
 
-        // Handle hash fragment for OAuth providers
-        if (location.hash) {
-          const { data: { session }, error: signInError } = 
-            await supabase.auth.getSession();
-          
-          if (signInError) throw signInError;
-          
-          if (!session) {
-            throw new Error(translations.invalidSession);
-          }
-        }
-
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.error("Session error in callback:", sessionError);
-          if (sessionError.status === 400) {
-            setError(translations.invalidSession);
-            if (mountedRef.current && !navigationAttempted.current) {
-              navigationAttempted.current = true;
-              navigate("/auth", { replace: true });
-            }
-            return;
-          }
           throw sessionError;
         }
 
@@ -87,15 +67,9 @@ const AuthCallback = () => {
             console.log(`No session found in callback, attempting retry ${retryCount.current + 1}/${MAX_RETRIES}`);
             retryCount.current++;
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            const { data: { session: retrySession }, error: retryError } = 
-              await supabase.auth.getSession();
-            
-            if (retryError || !retrySession) {
-              throw new Error(translations.maxRetries);
-            }
-          } else {
-            throw new Error(translations.maxRetries);
+            return handleAuthCallback();
           }
+          throw new Error(translations.invalidSession);
         }
 
         if (mountedRef.current && !navigationAttempted.current) {
@@ -106,7 +80,6 @@ const AuthCallback = () => {
           const returnUrl = localStorage.getItem("auth_return_url") || "/";
           localStorage.removeItem("auth_return_url");
           
-          // Ensure we're not stuck in a redirect loop
           if (returnUrl === '/auth/callback') {
             navigate("/", { replace: true });
           } else {
@@ -116,7 +89,7 @@ const AuthCallback = () => {
       } catch (error) {
         console.error("Auth callback error:", error);
         Sentry.captureException(error);
-        authState.setState('ERROR');
+        authState.setState('UNAUTHENTICATED');
         
         if (mountedRef.current) {
           setError(error instanceof Error ? error.message : translations.authError);

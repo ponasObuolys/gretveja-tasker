@@ -6,11 +6,27 @@ import { AuthError } from "@/components/auth/AuthError";
 import { useAuthFlow } from "@/hooks/auth/useAuthFlow";
 import { authLocalization } from "@/config/auth-localization";
 import { authAppearance } from "@/config/auth-appearance";
+import { useEffect } from "react";
 
 const Auth = () => {
   const { error, isLoading, isFormReady } = useAuthFlow();
   const redirectUrl = `${window.location.origin}/auth/callback`;
-  console.log("Auth redirect URL:", redirectUrl);
+  
+  useEffect(() => {
+    console.log("Auth component mounted, redirect URL:", redirectUrl);
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed in Auth component:", event, {
+        hasSession: !!session,
+        userEmail: session?.user?.email
+      });
+    });
+
+    return () => {
+      console.log("Cleaning up Auth component subscription");
+      subscription.unsubscribe();
+    };
+  }, [redirectUrl]);
 
   if (isLoading) {
     return <AuthLoading />;
